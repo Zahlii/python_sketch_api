@@ -8,10 +8,10 @@ class SJRect:
     def __init__(self):
         self._class: str = 'rect'
         self.constrainProportions: bool = False
-        self.x: float = 0
-        self.y: float = 0
-        self.width: float = 0
-        self.height: float = 0
+        self.x: float = 0.0
+        self.y: float = 0.0
+        self.width: float = 0.0
+        self.height: float = 0.0
 
 
 SJObjectId = NewType('SJObjectId', str)
@@ -36,7 +36,7 @@ SJStringRect = NewType('SJStringRect', str)
 
 
 class SJColor:
-    def __init__(self, r=0, g=0, b=0, a=1):
+    def __init__(self, r=0.0, g=0.0, b=0.0, a=1.0):
         self._class: str = 'color'
         self.red: float = r
         self.green: float = g
@@ -45,8 +45,8 @@ class SJColor:
 
 
 class SJColorPalette:
-    WHITE = SJColor(r=255, g=255, b=255)
-    BLACK = SJColor(r=0, g=0, b=0)
+    WHITE = SJColor(r=255.0, g=255.0, b=255.0)
+    BLACK = SJColor(r=0.0, g=0.0, b=0.0)
 
 
 class ResizingType(Enum):
@@ -184,7 +184,7 @@ class SJBorder:
         self.color: SJColor = SJColorPalette.BLACK
         self.fillType: FillTypeEnum = FillTypeEnum.Solid
         self.position: BorderPositionEnum = BorderPositionEnum.Outside
-        self.thickness: float = 1
+        self.thickness: float = 1.0
 
 
 FloatList = List[float]
@@ -206,10 +206,10 @@ class SJFill:
         self.color: SJColor = SJColorPalette.WHITE
         self.fillType: FillTypeEnum = FillTypeEnum.Solid
         self.image: SJImageDataReference = None
-        self.noiseIndex: float = 0
-        self.noiseIntensity: float = 0
+        self.noiseIndex: float = 0.0
+        self.noiseIntensity: float = 0.0
         self.patternFillType: PatternFillTypeEnum = PatternFillTypeEnum.Fill
-        self.patternTileScale: float = 0
+        self.patternTileScale: float = 0.0
 
 
 SJShadow__class = Enum('SJShadow__class', {"shadow": "shadow", "innerShadow": "innerShadow"})
@@ -219,19 +219,19 @@ class SJShadow_contextSettings:
     def __init__(self):
         self._class: str = 'graphicsContextSettings'
         self.blendMode: BlendModeEnum = BlendModeEnum.Color
-        self.opacity: float = 1
+        self.opacity: float = 1.0
 
 
 class SJShadow:
     def __init__(self):
         self.SJShadow__class: str = 'shadow'
         self.isEnabled: bool = False
-        self.blurRadius: float = 0
+        self.blurRadius: float = 0.0
         self.color: SJColor = SJColorPalette.BLACK
         self.contextSettings: SJShadow_contextSettings = {}
-        self.offsetX: float = 0
-        self.offsetY: float = 0
-        self.spread: float = 0
+        self.offsetX: float = 0.0
+        self.offsetY: float = 0.0
+        self.spread: float = 0.0
 
 
 SJBorderList = List[SJBorder]
@@ -249,7 +249,7 @@ class SJStyle:
         self.innerShadows: SJShadowList = []
         self.fills: SJFillList = []
         self.textStyle: SJTextStyle = SJTextStyle()
-        self.miterLimit: float = 10
+        self.miterLimit: float = 10.0
         self.startDecorationType: LineDecorationTypeEnum = LineDecorationTypeEnum._None
         self.endDecorationType: LineDecorationTypeEnum = LineDecorationTypeEnum._None
 
@@ -293,14 +293,14 @@ class ExportOptions:
         self._class: str = 'exportOptions'
         self.exportFormats: List = []
         self.includedLayerIds: List = []
-        self.layerOptions: float = 0
+        self.layerOptions: float = 0.0
         self.shouldTrim: bool = True
 
 
 class RulerData:
     def __init__(self):
         self._class: str = 'rulerData'
-        self.base: float = 0
+        self.base: float = 0.0
         self.guides: FloatList = []
 
 
@@ -323,19 +323,13 @@ class SJImageDataReference:
         self.sha1: SJImageDataReference_sha1 = {}
 
 
-class PointString:
-    def __init__(self, x=0, y=0):
-        self.x: float = 0
-        self.y: float = 0
-
-    def __repr__(self):
-        return '{%s,%s}' % (self.x, self.y)
+PointString = NewType('PointString',str)
 
 
 class SJCurvePoint:
     def __init__(self):
         self._class: str = 'curvePoint'
-        self.cornerRadius: float = 1
+        self.cornerRadius: float = 1.0
         self.curveFrom: PointString = None
         self.curveMode: CurveMode = CurveMode.Straight
         self.curveTo: PointString = None
@@ -367,7 +361,7 @@ class _SJLayerBase(SJIDBase):
         self.style: SJStyle = SJStyle()
         self.isFlippedHorizontal: bool = False
         self.isFlippedVertical: bool = False
-        self.rotation: float = 0
+        self.rotation: float = 0.0
         self.shouldBreakMaskChain: bool = False
         self.resizingType: ResizingType = ResizingType.Stretch
 
@@ -405,12 +399,12 @@ class SJSymbolInstanceLayer(_SJLayerBase):
         super().__init__()
         self._class: str = 'symbolInstance'
         self.frame: SJRect = SJRect()
-        self.horizontalSpacing: float = 0
-        self.verticalSpacing: float = 0
-        self.masterInfluenceEdgeMinXPadding: float = 0
-        self.masterInfluenceEdgeMaxXPadding: float = 0
-        self.masterInfluenceEdgeMinYPadding: float = 0
-        self.masterInfluenceEdgeMaxYPadding: float = 0
+        self.horizontalSpacing: float = 0.0
+        self.verticalSpacing: float = 0.0
+        self.masterInfluenceEdgeMinXPadding: float = 0.0
+        self.masterInfluenceEdgeMaxXPadding: float = 0.0
+        self.masterInfluenceEdgeMinYPadding: float = 0.0
+        self.masterInfluenceEdgeMaxYPadding: float = 0.0
         self.symbolID: SJObjectId = None
         self.overrides: SJSymbolInstanceLayer_overrides = {}
 
@@ -538,8 +532,8 @@ class SketchPage(_SJLayerBase):
 
 class SketchUserDataEntry:
     def __init__(self):
-        self.scrollOrigin: PointString = PointString()
-        self.zoomValue: float = 1
+        self.scrollOrigin: PointString = '{0,0}'
+        self.zoomValue: float = 1.0
 
 
 class SJArtboardDescription:

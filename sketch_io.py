@@ -51,7 +51,7 @@ def parse_meta(meta_contents):
 
 
 def str_to_type(ttype):
-    if ttype in ['str','list','dict']:
+    if ttype in ['str','list','dict','float','int']:
         return eval(ttype)
     ftype = 'sketch_types.' + ttype if 'sketch_types.' not in ttype else ttype
     return eval(ftype)
@@ -93,7 +93,7 @@ def js_to_py(cls, js, d=0, p=''):
                 vn = js[k]
                 if do_types_match(v, vn):
                     ret.__dict__[k] = vn
-                    print('\t' * d + 'COPY', k)
+                    # print('\t' * d + 'COPY', k)
                 else:
                     # print(v,vn)
                     if 'Dict[' in ft:
@@ -115,6 +115,10 @@ def js_to_py(cls, js, d=0, p=''):
 def do_types_match(obj1, obj2):
     t1 = type(obj1)
     t2 = type(obj2)
+
+    if t1 == float and t2 == int:
+        return True
+
 
     if t1 != t2:
         return False
@@ -140,3 +144,7 @@ def do_types_match(obj1, obj2):
 def parse_document(doc_contents):
     meta = js_to_py(sketch_types.SketchDocument, doc_contents,p='doc.json')
     return meta
+
+
+def parse_user(user_contents):
+    return js_to_py(sketch_types.SketchUserData, user_contents,p='user.json')

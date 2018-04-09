@@ -69,6 +69,8 @@ class SketchFile:
 
         self.sketch_document = sketch_io.parse_document(self.contents['document.json'])
 
+        self.sketch_user = sketch_io.parse_user(self.contents['user.json'])
+
 
 if __name__ == '__main__':
     file = SketchFile.from_file('Mockup.template.sketch')
