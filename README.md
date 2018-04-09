@@ -5,7 +5,9 @@ Allows reading binary "plists", and consequently allows you to query information
 Includes all relevant data, even metadata and saving information.
 
 
-CURRENTLY ONLY SUPPORTS READING!
+**CURRENTLY ONLY SUPPORTS READING!**
+
+**Note that this is a work in progress. Enhanced top-level features will soon arrive, and so will writing. Reading the data was the difficult part!**
 
 
 # Examples
