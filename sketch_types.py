@@ -47,7 +47,7 @@ class SJColor:
 
 
 class SJColorPalette:
-    WHITE = SJColor(r=255.0, g=255.0, b=255.0)
+    WHITE = SJColor(r=1.0, g=1.0, b=1.0)
     BLACK = SJColor(r=0.0, g=0.0, b=0.0)
 
 
@@ -476,19 +476,63 @@ class MSAttributedString:
         self._class: str = 'MSAttributedString'
         self.archivedAttributedString: KeyValueArchive = KeyValueArchive()
 
-    def get_archive(self):
-        bstr = base64.b64decode(self.archivedAttributedString._archive)
-        return readPlistFromString(bstr)
+        self._raw: str = None  # cached copy of dict
 
-    def update_archive(self, k: int,v: str):
+    def get_archive(self):
+        if self._raw is not None:
+            return self._raw
+
+        bstr = base64.b64decode(self.archivedAttributedString._archive)
+        a = readPlistFromString(bstr)
+        self._raw = a
+        return a
+
+    def set_val(self, k: int,v):
         archive = self.get_archive()
         archive['$objects'][k] = v
         dt = writePlistToString(archive)
         bstr = base64.b64encode(dt)
         self.archivedAttributedString._archive = bstr
 
-    def set_string(self, string):
-        self.update_archive(2,string)
+    def get_val(self, val: int):
+        return self.get_archive()['$objects'][val]
+
+    def get_text(self):
+        return self.get_val(2)
+
+    def set_text(self, string):
+        self.set_val(2,string)
+
+    def get_color(self):
+        r = self.get_val(25)
+        a = self.get_val(26)
+        b = self.get_val(27)
+        g = self.get_val(28)
+        ret = SJColor()
+        ret.alpha = a
+        ret.red = r
+        ret.green = g
+        ret.blue = b
+
+        return ret
+
+    def set_color(self, color: SJColor):
+        self.set_val(25, color.red)
+        self.set_val(26, color.alpha)
+        self.set_val(27, color.blue)
+        self.set_val(28, color.green)
+
+    def get_font_size(self):
+        return self.get_val(16)
+
+    def set_font_size(self, size: float):
+        self.set_val(16, size)
+
+    def set_font_family(self, family: str):
+        self.set_val(17, family)
+
+    def get_font_family(self):
+        return self.get_val(17)
 
 
 class MSJSONFileReference:
@@ -542,7 +586,7 @@ class SketchDocument(SJIDBase):
         self.colorSpace: int = 0
         self.currentPageIndex: int = 0
         self.foreignSymbols = []
-        self.assets = []
+        self.assets: SJAssetCollection = {}
 
         self.layerTextStyles: SJSharedTextStyleContainer = []
         self.layerStyles: SJSharedStyleContainer = []
