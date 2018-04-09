@@ -520,7 +520,7 @@ class SketchPage(_SJLayerBase):
         super().__init__()
         self._class: str = 'page'
         self.exportOptions: ExportOptions = ExportOptions()
-        self.frame = SJRect()
+        self.frame: SJRect = SJRect()
         self.resizingConstraint: int = 0  # TODO
         self.includeInCloudUpload: bool = False  # TODO
         self.horizontalRulerData: RulerData = RulerData()

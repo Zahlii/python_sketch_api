@@ -71,6 +71,12 @@ class SketchFile:
 
         self.sketch_user = sketch_io.parse_user(self.contents['user.json'])
 
+        self.sketch_pages = []
+
+        for p, v in self.contents.items():
+            if 'pages/' in p:
+                self.sketch_pages.append(sketch_io.parse_page(v, p))
+
 
 if __name__ == '__main__':
     file = SketchFile.from_file('Mockup.template.sketch')

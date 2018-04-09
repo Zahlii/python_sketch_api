@@ -1,3 +1,5 @@
+from enum import Enum
+
 import sketch_types
 
 with open('sketch_types.py', 'r') as f:
@@ -23,9 +25,7 @@ def get_type(cls, field):
                     return 'list'
                 if '{}' in l:
                     return 'dict'
-
             dtype = l.split(':')[1].split('=')[0].strip()
-
             return get_full_type(dtype)
 
     return None
@@ -34,10 +34,11 @@ def get_type(cls, field):
 def get_full_type(ttype):
     if ttype in ['int', 'str', 'bool', 'float', 'list','dict']:
         return ttype
+
     for l in lines:
-        if 'class' in l and ' ' + ttype in l:
+        if 'class' in l and ' ' + ttype in l and ':' in l:
             return ttype
-        if ttype + ' ' in l and '=' in l:
+        if ttype + ' ' in l and '=' in l and ':' not in l:
             return l.split('=')[1].strip()
 
     return ttype
@@ -74,13 +75,30 @@ def js_to_py_dict(ft, js, d, p):
 
         return dn
 
+def js_to_py_list(ft, js, d, p):
+    if 'List' not in ft:
+        return js
+    else:
+        keytype = ft.split('List[')[1].split(']')[0]
+        keytype = str_to_type(keytype)
+
+        dret = []
+        print(keytype)
+        for _,v in enumerate(js):
+            dret.append(js_to_py(keytype, v,d=d+1,p=p+'[%d]' % _))
+
+        return dret
 
 def js_to_py(cls, js, d=0, p=''):
+
     if issubclass(cls, dict):
         return js_to_py_dict(str(cls),js,d,p)
     elif cls is list:
-        ret = []
+        ret = js
+    elif issubclass(cls, Enum):
+        return cls(js)
     else:
+
         ret = cls()
 
         for k, v in ret.__dict__.items():
@@ -91,7 +109,7 @@ def js_to_py(cls, js, d=0, p=''):
             prop = p + '.' + k
             if k in js:
                 vn = js[k]
-                if do_types_match(v, vn):
+                if do_types_match(v, vn, ft):
                     ret.__dict__[k] = vn
                     # print('\t' * d + 'COPY', k)
                 else:
@@ -100,32 +118,38 @@ def js_to_py(cls, js, d=0, p=''):
                         if type(vn) is dict:
                             ret.__dict__[k] = js_to_py_dict(ft, vn, d=d + 1, p=prop)
                         else:
-                            print('Couldnt match property %s to type %s' % (prop, ft))
+                            print('Couldnt match dict property %s to type %s' % (prop, ft))
                         continue
                     if 'List[' in ft:
                         if type(vn) is list:
-                            print('LIST', vn)
+                            ret.__dict__[k] = js_to_py_list(ft, vn, d=d + 1, p=prop)
+                        else:
+                            print('Couldnt match list property %s to type %s' % (prop, ft))
                         continue
                     ret.__dict__[k] = js_to_py(str_to_type(ft), vn, d=d + 1, p=prop)
             else:
-                print('Couldnt find required property %s' % prop)
+                pass # print('Couldnt find expected property %s' % prop)
     return ret
 
 
-def do_types_match(obj1, obj2):
+def do_types_match(obj1, obj2, ft):
     t1 = type(obj1)
     t2 = type(obj2)
 
-    if t1 == float and t2 == int:
+    if t1 == float and t2 == int or t2 == float and t1 == int:
         return True
-
 
     if t1 != t2:
         return False
 
     if t1 is list:
+
         if min(len(obj1), len(obj2)) == 0:
-            return True
+            if 'List' in ft and len(obj2) > 0:
+                exp_type = ft.split('List[')[1].split(']')[0].strip()
+                return type(obj2[0]).__name__ == exp_type
+            else:
+                return True
         else:
             for i, j in zip(obj1, obj2):
                 if not do_types_match(i, j):
@@ -148,3 +172,7 @@ def parse_document(doc_contents):
 
 def parse_user(user_contents):
     return js_to_py(sketch_types.SketchUserData, user_contents,p='user.json')
+
+
+def parse_page(page_contents, file):
+    return js_to_py(sketch_types.SketchPage, page_contents,p=file)
