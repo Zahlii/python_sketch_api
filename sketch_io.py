@@ -6,7 +6,12 @@ with open('sketch_types.py', 'r') as f:
     lines = f.readlines()
 
 
+type_map_ext = {}
+
 def get_type(cls, field):
+    if cls in type_map_ext and field in type_map_ext[cls]:
+        return type_map_ext[cls][field]
+
     is_right = False
     for l in lines:
         if 'class %s(' % cls in l or 'class %s:' % cls in l:
@@ -15,6 +20,9 @@ def get_type(cls, field):
             if '(' in l and ')' in l:  # extends
                 tt = get_type(l.split('(')[1].split(')')[0].strip(), field)
                 if tt is not None:
+                    if cls not in type_map_ext:
+                        type_map_ext[cls] = {}
+                    type_map_ext[cls][field] = tt
                     return tt
         elif 'class ' in l and ':' in l:
             is_right = False
@@ -26,13 +34,20 @@ def get_type(cls, field):
                 if '{}' in l:
                     return 'dict'
             dtype = l.split(':')[1].split('=')[0].strip()
-            return get_full_type(dtype)
+            tt = get_full_type(dtype)
+            if cls not in type_map_ext:
+                type_map_ext[cls] = {}
+            type_map_ext[cls][field] = tt
+            return tt
 
+    if cls not in type_map_ext:
+        type_map_ext[cls] = {}
+    type_map_ext[cls][field] = None
     return None
 
 
 def get_full_type(ttype):
-    if ttype in ['int', 'str', 'bool', 'float', 'list','dict']:
+    if ttype in ['int', 'str', 'bool', 'float', 'list', 'dict']:
         return ttype
 
     for l in lines:
@@ -47,33 +62,64 @@ def get_full_type(ttype):
 def parse_meta(meta_contents):
     # pprint(meta_contents)
 
-    meta = js_to_py(sketch_types.SketchMeta, meta_contents,p='meta.json')
+    meta = js_to_py(sketch_types.SketchMeta, meta_contents, p='meta.json')
     return meta
 
 
+type_map = {}
+
+
+def _eval(ttype):
+    if ttype in type_map:
+        return type_map[ttype]
+    else:
+        r = eval(ttype)
+        type_map[ttype] = r
+        return r
+
+
 def str_to_type(ttype):
-    if ttype in ['str','list','dict','float','int']:
-        return eval(ttype)
+    ttype = ttype.strip()
+    if ttype in ['str', 'list', 'dict', 'float', 'int']:
+        return _eval(ttype)
     ftype = 'sketch_types.' + ttype if 'sketch_types.' not in ttype else ttype
-    return eval(ftype)
+    return _eval(ftype)
 
 
 def js_to_py_dict(ft, js, d, p):
     if 'Dict' not in ft:
         return js
     else:
-        keytype, valtype = ft.split('Dict[')[1].replace(']', '').split(',')
-        keytype = str_to_type(keytype)
-        valtype = str_to_type(valtype)
+        is_union = False
 
-        dn = {}
+        if 'Union' in ft:
+            keytype, valtype = ft.split('Dict[')[1].replace(']]', ']').split(',', 1)
+            keytype = str_to_type(keytype)
+            dn = {}
 
-        for sk, sv in js.items():
-            # print(valtype)
-            skk = keytype(sk)
-            dn[skk] = js_to_py(valtype, sv, d=d + 1, p=p + '.' + sk)
+            for sk, sv in js.items():
+                # print(valtype)
+                skk = keytype(sk)
+                dn[skk] = js_to_union(valtype, sv, d=d + 1, p=p + '.' + sk)
+                # dn[skk] = js_to_py(valtype, sv, d=d + 1, p=p + '.' + sk)
 
-        return dn
+            return dn
+        else:
+            keytype, valtype = ft.split('Dict[')[1].replace(']', '').split(',')
+            keytype = str_to_type(keytype)
+            valtype = str_to_type(valtype)
+
+            dn = {}
+
+            for sk, sv in js.items():
+                # print(valtype)
+                skk = keytype(sk)
+
+                # dn[skk] = js_to_union(valtype, sv, d=d + 1, p=p + '.' + sk)
+                dn[skk] = js_to_py(valtype, sv, d=d + 1, p=p + '.' + sk)
+
+            return dn
+
 
 def js_to_py_list(ft, js, d, p):
     if 'List' not in ft:
@@ -83,22 +129,46 @@ def js_to_py_list(ft, js, d, p):
         keytype = str_to_type(keytype)
 
         dret = []
-        print(keytype)
-        for _,v in enumerate(js):
-            dret.append(js_to_py(keytype, v,d=d+1,p=p+'[%d]' % _))
+        for _, v in enumerate(js):
+            dret.append(js_to_py(keytype, v, d=d + 1, p=p + '[%d]' % _))
 
         return dret
 
-def js_to_py(cls, js, d=0, p=''):
 
-    if issubclass(cls, dict):
-        return js_to_py_dict(str(cls),js,d,p)
+def js_to_union(ft, js, d, p):
+    avtypes = ft.split('Union[')[1].split(']')[0].split(',')
+    for av in avtypes:
+        if av == 'str':
+            if type(js) is str:
+                return js
+            continue
+        av = str_to_type(av)
+        test = av().__dict__
+        if '_class' in js and '_class' in test and js['_class'] == test['_class']:
+            return js_to_py(av, js, d, p)
+        elif 'symbolID' in test:
+            return js_to_py(av, js, d, p)
+    print('Unknown value %s for union type %s at %s' % (js, ft, p))
+    return js
+
+
+def js_to_py(cls, js, d=0, p=''):
+    x = str(cls)
+    if 'typing.Union' in x:
+        return js_to_union(x, js, d, p)
+    if 'NewType' in x:
+        return cls(js)
+    if 'dict' in x or 'Dict' in x:
+        return js_to_py_dict(x, js, d, p)
     elif cls is list:
         ret = js
-    elif issubclass(cls, Enum):
+    elif 'Enum' in x or 'enum' in x:
         return cls(js)
+    elif 'float' in x:
+        return float(js)
+    elif 'int' in x:
+        return int(js)
     else:
-
         ret = cls()
 
         for k, v in ret.__dict__.items():
@@ -128,11 +198,11 @@ def js_to_py(cls, js, d=0, p=''):
                         continue
                     ret.__dict__[k] = js_to_py(str_to_type(ft), vn, d=d + 1, p=prop)
             else:
-                pass # print('Couldnt find expected property %s' % prop)
+                pass  # print('Couldnt find expected property %s' % prop)
     return ret
 
 
-def do_types_match(obj1, obj2, ft):
+def do_types_match(obj1, obj2, ft=None):
     t1 = type(obj1)
     t2 = type(obj2)
 
@@ -166,13 +236,13 @@ def do_types_match(obj1, obj2, ft):
 
 
 def parse_document(doc_contents):
-    meta = js_to_py(sketch_types.SketchDocument, doc_contents,p='doc.json')
+    meta = js_to_py(sketch_types.SketchDocument, doc_contents, p='doc.json')
     return meta
 
 
 def parse_user(user_contents):
-    return js_to_py(sketch_types.SketchUserData, user_contents,p='user.json')
+    return js_to_py(sketch_types.SketchUserData, user_contents, p='user.json')
 
 
 def parse_page(page_contents, file):
-    return js_to_py(sketch_types.SketchPage, page_contents,p=file)
+    return js_to_py(sketch_types.SketchPage, page_contents, p=file)

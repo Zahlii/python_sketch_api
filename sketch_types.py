@@ -29,7 +29,7 @@ def get_object_id():
 
 class SJIDBase:
     def __init__(self):
-        self.do_objectID: SJObjectId = get_object_id()
+        self.do_objectID: SJObjectId = None  # get_object_id()
 
 
 SJStringRect = NewType('SJStringRect', str)
@@ -163,6 +163,17 @@ class ExportOptionsFormat(Enum):
     SVG = 'svg'
 
 
+class ExportFormat:
+    def __init__(self):
+        self._class: str = 'exportFormat'
+        self.absoluteSize: int = 0
+        self.fileFormat: ExportOptionsFormat = 'png'
+        self.name: str = ''
+        self.namingScheme: int = 0
+        self.scale: int = 1
+        self.visibleScaleType: int = 0
+
+
 class TextAlignmentEnum(Enum):
     Left = 0
     Right = 1
@@ -224,7 +235,7 @@ class SJShadow_contextSettings:
 
 class SJShadow:
     def __init__(self):
-        self.SJShadow__class: str = 'shadow'
+        self._class: SJShadow__class = 'shadow'
         self.isEnabled: bool = False
         self.blurRadius: float = 0.0
         self.color: SJColor = SJColorPalette.BLACK
@@ -291,7 +302,7 @@ class SJSharedSymbolContainer:
 class ExportOptions:
     def __init__(self):
         self._class: str = 'exportOptions'
-        self.exportFormats: List = []
+        self.exportFormats: List[ExportFormat] = []
         self.includedLayerIds: List = []
         self.layerOptions: float = 0.0
         self.shouldTrim: bool = True
@@ -323,7 +334,7 @@ class SJImageDataReference:
         self.sha1: SJImageDataReference_sha1 = {}
 
 
-PointString = NewType('PointString',str)
+PointString = NewType('PointString', str)
 
 
 class SJCurvePoint:
@@ -364,6 +375,7 @@ class _SJLayerBase(SJIDBase):
         self.rotation: float = 0.0
         self.shouldBreakMaskChain: bool = False
         self.resizingType: ResizingType = ResizingType.Stretch
+        self.exportOptions: ExportOptions = ExportOptions()
 
 
 class _SJArtboardBase(_SJLayerBase):
@@ -443,7 +455,7 @@ SJShapeLayer__class = Enum('SJShapeLayer__class', {"rectangle": "rectangle", "ov
 class SJShapeLayer(SJIDBase):
     def __init__(self):
         super().__init__()
-        self.SJShapeLayer__class: str = 'rectangle'
+        self._class: SJShapeLayer__class = 'rectangle'
 
 
 EncodedBase64BinaryPlist = NewType('EncodedBase64BinaryPlist', str)
@@ -470,7 +482,17 @@ class MSJSONFileReference:
         self._ref: str = ''  # i.e. pages/doObjectID
 
 
-SJLayer = Union[SJArtboardLayer, SJTextLayer, SJGroupLayer, SJShapeGroupLayer, SJShapeLayer, SJSymbolInstanceLayer]
+class SJImageLayer(_SJLayerBase):
+    def __init__(self):
+        super().__init__()
+        self._class: str = 'bitmap'
+        self.clippingMask: SJStringRect = SJStringRect('{{0, 0}, {1, 1}}')
+        self.fillReplacesImage: bool = False
+        self.image: MSJSONFileReference = MSJSONFileReference()
+
+
+SJLayer = Union[
+    SJImageLayer, SJArtboardLayer, SJTextLayer, SJGroupLayer, SJShapeGroupLayer, SJShapeLayer, SJSymbolInstanceLayer]
 SJLayerList = List[SJLayer]
 
 
