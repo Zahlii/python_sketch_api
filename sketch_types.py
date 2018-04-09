@@ -2,6 +2,8 @@ import secrets
 from enum import Enum
 
 from typing import NewType, Union, List, Dict
+from biplist import readPlist, readPlistFromString, writePlistToString
+import base64
 
 
 class SJRect:
@@ -473,6 +475,20 @@ class MSAttributedString:
     def __init__(self):
         self._class: str = 'MSAttributedString'
         self.archivedAttributedString: KeyValueArchive = KeyValueArchive()
+
+    def get_archive(self):
+        bstr = base64.b64decode(self.archivedAttributedString._archive)
+        return readPlistFromString(bstr)
+
+    def update_archive(self, k: int,v: str):
+        archive = self.get_archive()
+        archive['$objects'][k] = v
+        dt = writePlistToString(archive)
+        bstr = base64.b64encode(dt)
+        self.archivedAttributedString._archive = bstr
+
+    def set_string(self, string):
+        self.update_archive(2,string)
 
 
 class MSJSONFileReference:
