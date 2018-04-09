@@ -67,6 +67,8 @@ class SketchFile:
     def _read_contents_to_objects(self):
         self.sketch_meta = sketch_io.parse_meta(self.contents['meta.json'])
 
+        self.sketch_document = sketch_io.parse_document(self.contents['document.json'])
+
 
 if __name__ == '__main__':
     file = SketchFile.from_file('Mockup.template.sketch')

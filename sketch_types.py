@@ -272,19 +272,19 @@ SJSharedStyleList = List[SJSharedStyle]
 
 class SJSharedTextStyleContainer:
     def __init__(self):
-        self._class = 'sharedTextStyleContainer'
+        self._class: str = 'sharedTextStyleContainer'
         self.objects: SJSharedStyleList = []
 
 
 class SJSharedStyleContainer:
     def __init__(self):
-        self._class = 'sharedStyleContainer'
+        self._class: str = 'sharedStyleContainer'
         self.objects: SJSharedStyleList = []
 
 
 class SJSharedSymbolContainer:
     def __init__(self):
-        self._class = 'sharedStyleContainer'
+        self._class: str = 'sharedStyleContainer'
         self.objects: SJSharedStyleList = []  # TODO not clear
 
 
@@ -482,7 +482,7 @@ SJLayerList = List[SJLayer]
 
 class SJImageCollection:
     def __init__(self):
-        self._class = 'imageCollection'
+        self._class: str = 'imageCollection'
         self.images: dict = {}  # TODO
 
 
@@ -491,7 +491,7 @@ SJColorList = List[SJColor]
 
 class SJAssetCollection:
     def __init__(self):
-        self._class = 'assetCollection'
+        self._class: str = 'assetCollection'
         self.colors: SJColorList = []
         self.gradients: List = []  # TODO
         self.images: List = []  # TODO
