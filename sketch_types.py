@@ -37,13 +37,18 @@ class SJIDBase:
 SJStringRect = NewType('SJStringRect', str)
 
 
-class SJColor:
+class SJColorNoClass:
     def __init__(self, r=None, g=None, b=None, a=1.0):
-        self._class: str = 'color'
         self.red: float = r
         self.green: float = g
         self.blue: float = b
         self.alpha: float = a
+
+
+class SJColor(SJColorNoClass):
+    def __init__(self, r=None, g=None, b=None, a=1.0):
+        super().__init__(r, g, b, a)
+        self._class: str = 'color'
 
 
 class SJColorPalette:
@@ -130,7 +135,7 @@ class MaskModeEnum(Enum):
 
 
 class BooleanOperation(Enum):
-    _None: -1
+    _None = -1
     Union = 0
     Subtract = 1
     Intersect = 2
@@ -195,9 +200,14 @@ class SJBorder:
         self._class: str = 'border'
         self.isEnabled: bool = True
         self.color: SJColor = SJColorPalette.BLACK
-        self.fillType: FillTypeEnum = FillTypeEnum.Solid
-        self.position: BorderPositionEnum = BorderPositionEnum.Outside
-        self.thickness: float = 1.0
+        self.fillType: FillTypeEnum = None
+        self.position: BorderPositionEnum = None
+        self.thickness: float = None
+        self.contextSettings: SJContextSettings = None
+        self.offsetX: int = None
+        self.offsetY: int = None
+        self.spread: int = None
+        self.blurRadius: int = None
 
 
 FloatList = List[float]
@@ -223,16 +233,36 @@ class SJFill:
         self.noiseIntensity: float = None
         self.patternFillType: PatternFillTypeEnum = PatternFillTypeEnum.Fill
         self.patternTileScale: float = None
+        self.gradient: SJGradient = None
+        self.do_objectID: SJObjectId = None
 
 
 SJShadow__class = Enum('SJShadow__class', {"shadow": "shadow", "innerShadow": "innerShadow"})
 
 
-class SJShadow_contextSettings:
+class SJGradientStop:
+    def __init__(self):
+        self._class: str = 'gradientStop'
+        self.position: float = None
+        self.color: SJColor = None
+
+
+class SJGradient:
+    def __init__(self):
+        self._class: str = 'gradient'
+        self.elipseLength: int = None
+        setattr(self, 'from', None)
+        # self.from: PointString = None
+        self.to: PointString = None
+        self.gradientType: GradientTypeEnum = None
+        self.stops: List[SJGradientStop] = None
+
+
+class SJContextSettings:
     def __init__(self):
         self._class: str = 'graphicsContextSettings'
-        self.blendMode: BlendModeEnum = BlendModeEnum.Color
-        self.opacity: float = 1.0
+        self.blendMode: BlendModeEnum = None
+        self.opacity: float = None
 
 
 class SJShadow:
@@ -241,7 +271,7 @@ class SJShadow:
         self.isEnabled: bool = False
         self.blurRadius: float = None
         self.color: SJColor = SJColorPalette.BLACK
-        self.contextSettings: SJShadow_contextSettings = {}
+        self.contextSettings: SJContextSettings = {}
         self.offsetX: float = None
         self.offsetY: float = None
         self.spread: float = None
@@ -250,6 +280,27 @@ class SJShadow:
 SJBorderList = List[SJBorder]
 SJShadowList = List[SJBorder]
 SJFillList = List[SJFill]
+
+
+class SJBlur:
+    def __init__(self):
+        self._class: str = 'blur'
+        self.isEnabled: bool = None
+        self.center: PointString = None
+        self.motionAngle: float = None
+        self.radius: int = None
+        self.type: BlurTypeEnum = None
+
+
+class SJColorControls:
+    def __init__(self):
+        self._class: str = 'colorControls'
+        self.isEnabled: bool = None
+        self.brightness: int = None
+        self.contrast: int = None
+        self.contrast: int = None
+        self.hue: int = None
+        self.saturation: int = None
 
 
 class SJStyle:
@@ -265,14 +316,22 @@ class SJStyle:
         self.miterLimit: float = 10.0
         self.startDecorationType: LineDecorationTypeEnum = LineDecorationTypeEnum._None
         self.endDecorationType: LineDecorationTypeEnum = LineDecorationTypeEnum._None
+        self.blur: SJBlur = None
+        self.contextSettings: SJContextSettings = None
+        self.colorControls: SJColorControls = None
+        self.do_objectID: SJObjectId = None
 
 
 class SJTextStyleAttribute:
     def __init__(self):
         self.MSAttributedStringFontAttribute: KeyValueArchive = None
-        self.kerning: int = 0
+        self.kerning: int = None
         self.MSAttributedStringColorAttribute: SJColor = None
         self.paragraphStyle: KeyValueArchive = None
+        self.MSAttributedStringColorDictionaryAttribute: SJColorNoClass = None
+        self.MSAttributedStringTextTransformAttribute: int = None
+        self.strikethroughStyle: int = None
+        self.underlineStyle: int = None
 
 
 class SJTextStyle:
@@ -342,8 +401,8 @@ class SJImageDataReference:
         self._class: str = 'MSJSONOriginalDataReference'
         self._ref: str = ''
         self._ref_class: str = 'MSImageData'
-        self.data: SJImageDataReference_data = {}
-        self.sha1: SJImageDataReference_sha1 = {}
+        self.data: SJImageDataReference_data = None
+        self.sha1: SJImageDataReference_sha1 = None
 
 
 PointString = NewType('PointString', str)
@@ -352,6 +411,7 @@ PointString = NewType('PointString', str)
 class SJCurvePoint:
     def __init__(self):
         self._class: str = 'curvePoint'
+        self.do_objectID: SJObjectId = None
         self.cornerRadius: float = 1.0
         self.curveFrom: PointString = None
         self.curveMode: CurveMode = CurveMode.Straight
@@ -362,13 +422,6 @@ class SJCurvePoint:
 
 
 SJCurvePointList = List[SJCurvePoint]
-
-
-class SJPath:
-    def __init__(self):
-        self._class: str = 'path'
-        self.isClosed: bool = True
-        self.points: SJCurvePointList = []
 
 
 class _SJLayerBase(SJIDBase):
@@ -388,12 +441,19 @@ class _SJLayerBase(SJIDBase):
         self.shouldBreakMaskChain: bool = False
         self.resizingType: ResizingType = ResizingType.Stretch
         self.exportOptions: ExportOptions = ExportOptions()
-        self.includeInCloudUpload: bool = True
+        self.includeInCloudUpload: bool = None
         self.backgroundColor: SJColor = None
         self.hasBackgroundColor: bool = None
-        self.horizontalRulerData: RulerData = RulerData()
-        self.verticalRulerData: RulerData = RulerData()
+        self.horizontalRulerData: RulerData = None
+        self.verticalRulerData: RulerData = None
         self.includeBackgroundColorInExport: bool = None
+        self.resizingConstraint: int = None
+        self.frame: SJRect = SJRect()
+        self.originalObjectID: SJObjectId = None
+        self.userInfo: dict = None
+        self.resizesContent: bool = None
+        self.isFlowHome: bool = None
+        self.layout: SJLayoutGrid = None
 
 
 class _SJArtboardBase(_SJLayerBase):
@@ -402,6 +462,12 @@ class _SJArtboardBase(_SJLayerBase):
         self.frame: SJRect = SJRect()
 
 
+class SJSimpleGrid:
+    def __init__(self):
+        self._class: str = 'simpleGrid'
+        self.isEnabled: bool = None
+        self.gridSize: int = None
+        self.thickGridTimes: int = None
 
 
 class SJSymbolMaster(_SJArtboardBase):
@@ -410,21 +476,43 @@ class SJSymbolMaster(_SJArtboardBase):
         self._class: str = 'symbolMaster'
         self.includeBackgroundColorInInstance: bool = False
         self.symbolID: SJObjectId = None
+        self.changeIdentifier: int = None
+        self.grid: SJSimpleGrid = None
 
 
-class SJNestedSymbolOverride:
+SJSymbolInstanceLayer_overrides = Dict[SJObjectId, Union[str, SJImageDataReference, dict]]
+
+
+class SJLayoutGrid:
     def __init__(self):
-        self.symbolID: SJObjectId = None
+        self._class: str = 'layoutGrid'
+        self.isEnabled: bool = None
+        self.columnWidth: float = None
+        self.drawHorizontal: bool = None
+        self.drawHorizontalLines: bool = None
+        self.drawVertical: bool = None
+        self.gutterHeight: int = None
+        self.gutterWidth: int = None
+        self.guttersOutside: bool = None
+        self.horizontalOffset: int = None
+        self.numberOfColumns: int = None
+        self.rowHeightMultiplication: int = None
+        self.totalWidth: int = None
 
 
-SJSymbolInstanceLayer_overrides = Dict[SJObjectId, Union[str, SJNestedSymbolOverride, SJImageDataReference]]
+class SJOverride:
+    def __init__(self):
+        self._class: str = 'overrideValue'
+        self.overrideName: SJObjectId = None
+        self.value: str = None
+        self.do_objectID: SJObjectId = None
 
 
 class SJSymbolInstanceLayer(_SJLayerBase):
     def __init__(self):
         super().__init__()
         self._class: str = 'symbolInstance'
-        self.frame: SJRect = SJRect()
+
         self.horizontalSpacing: float = None
         self.verticalSpacing: float = None
         self.masterInfluenceEdgeMinXPadding: float = None
@@ -432,13 +520,32 @@ class SJSymbolInstanceLayer(_SJLayerBase):
         self.masterInfluenceEdgeMinYPadding: float = None
         self.masterInfluenceEdgeMaxYPadding: float = None
         self.symbolID: SJObjectId = None
+
         self.overrides: SJSymbolInstanceLayer_overrides = None
+        self.overrideValues: List[SJOverride] = None
+        self.scale: int = None
+
+        self.changeIdentifier: int = None
+        self.includeBackgroundColorInInstance: bool = None
+
+        # TODO investigate, maybe this occurs elsewhere
+        self.path: SJPath = None
+
+
+class SJPresetDict:
+    def __init__(self):
+        self.height: int = None
+        self.width: int = None
+        self.offersLandScapeVariant: int = None  # TODO enum?
+        self.name: str = None
+        self.allowResizedMatching: int = None
 
 
 class SJArtboardLayer(_SJArtboardBase):
     def __init__(self):
         super().__init__()
         self._class: str = 'artboard'
+        self.presetDictionary: SJPresetDict = None
 
 
 class SJTextLayer(_SJLayerBase):
@@ -447,6 +554,10 @@ class SJTextLayer(_SJLayerBase):
         self._class: str = 'text'
         self.attributedString: MSAttributedString = None
         self.glyphBounds: SJStringRect = None
+        self.lineSpacingBehaviour: int = None
+        self.dontSynchroniseWithSymbol: bool = None
+        self.automaticallyDrawOnUnderlyingPath: bool = None
+        self.textBehaviour: int = None
 
 
 class SJGroupLayer(_SJLayerBase):
@@ -461,18 +572,53 @@ class SJShapeGroupLayer(_SJLayerBase):
         self._class: str = 'shapeGroup'
         self.style: SJStyle = SJStyle()
         self.hasClippingMask: bool = False
+        self.windingRule: int = None  # TODO enum
+        self.clippingMaskMode: MaskModeEnum = None
 
 
-SJShapeLayer__class = Enum('SJShapeLayer__class', {"rectangle": "rectangle", "oval": "oval", "shapePath": "shapePath"})
-
-
-class SJShapeLayer(SJIDBase):
+class SJShapeLayer(_SJLayerBase):
     def __init__(self):
         super().__init__()
-        self._class: SJShapeLayer__class = 'rectangle'
+        self._class: str = None
+        self.points: SJCurvePointList = None
+        self.edited: bool = None
+        self.isClosed: bool = None
+        self.pointRadiusBehaviour: int = None
+        self.booleanOperation: BooleanOperation = None
+        self.fixedRadius: int = None
+        self.hasConvertedToNewRoundCorners: bool = None
+
+
+class SJShapeRectangleLayer(SJShapeLayer):
+    def __init__(self):
+        super().__init__()
+        self._class: str = 'rectangle'
+        self.path: SJPath = None
+
+
+class SJShapeOvalLayer(SJShapeLayer):
+    def __init__(self):
+        super().__init__()
+        self._class: str = 'oval'
+        self.path: SJPath = None
+
+
+class SJShapePathLayer(SJShapeLayer):
+    def __init__(self):
+        super().__init__()
+        self._class: str = 'shapePath'
+        self.path: SJPath = None
 
 
 EncodedBase64BinaryPlist = NewType('EncodedBase64BinaryPlist', str)
+
+
+class SJPath:
+    def __init__(self):
+        self._class: str = 'path'
+        self.isClosed: bool = False
+        self.points: SJCurvePointList = None
+        self.pointRadiusBehaviour: int = None
 
 
 class KeyValueArchive:
@@ -498,6 +644,7 @@ class KeyValueArchive:
 
     def get_val(self, val: int):
         return self.get_archive()['$objects'][val]
+
 
 NSColorArchive = NewType('NSColorArchive', KeyValueArchive)
 
@@ -557,12 +704,12 @@ class SJImageLayer(_SJLayerBase):
         super().__init__()
         self._class: str = 'bitmap'
         self.clippingMask: SJStringRect = SJStringRect('{{0, 0}, {1, 1}}')
-        self.fillReplacesImage: bool = False
-        self.image: MSJSONFileReference = MSJSONFileReference()
+        self.fillReplacesImage: bool = None
+        self.image: MSJSONFileReference = None
 
 
 SJLayer = Union[
-    SJImageLayer, SJArtboardLayer, SJTextLayer, SJGroupLayer, SJShapeGroupLayer, SJShapeLayer, SJSymbolInstanceLayer]
+    SJImageLayer, SJSymbolMaster, SJArtboardLayer, SJTextLayer, SJGroupLayer, SJShapeGroupLayer, SJShapeOvalLayer, SJShapeRectangleLayer, SJShapePathLayer, SJSymbolInstanceLayer]
 SJLayerList = List[SJLayer]
 
 
@@ -579,7 +726,7 @@ class SJAssetCollection:
     def __init__(self):
         self._class: str = 'assetCollection'
         self.colors: SJColorList = []
-        self.gradients: List = []  # TODO
+        self.gradients: List[SJGradient] = []  # TODO
         self.images: List = []  # TODO
         self.imageCollection: SJImageCollection = SJImageCollection()
 
@@ -626,6 +773,8 @@ class SketchUserDataEntry:
         self.scrollOrigin: PointString = None
         self.zoomValue: float = None
         self.pageListHeight: int = None
+        self.exportableLayerSelection: List[SJObjectId] = None
+        self.cloudShare: bool = None  # TODO check true type
 
 
 class SJArtboardDescription:

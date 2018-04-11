@@ -118,5 +118,8 @@ class SketchFile:
 
 
 if __name__ == '__main__':
-    file = SketchFile.from_file('test.sketch')
+    # file = SketchFile.from_file('test.sketch')
+    # file = SketchFile.from_file('test.sketch')
+    print('Done1')
+    file2 = SketchFile.from_file('Mockup.template.sketch')
     # file.save_to('test2.sketch')

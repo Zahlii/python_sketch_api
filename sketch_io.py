@@ -1,9 +1,9 @@
 import copy
 import json
 from json import JSONEncoder
+from typing import Dict, Any, List
 
 import sketch_types
-from typing import Dict, Any, List
 from sketch_types import SJObjectId
 
 with open('sketch_types.py', 'r') as f:
@@ -86,13 +86,13 @@ class SketchToPy:
     @classmethod
     def str_to_type(cls, ttype):
         ttype = ttype.strip()
-        if ttype in ['str', 'list', 'dict', 'float', 'int','bool']:
+        if ttype in ['str', 'list', 'dict', 'float', 'int', 'bool']:
             return cls._eval(ttype)
         ftype = 'sketch_types.' + ttype if 'sketch_types.' not in ttype else ttype
         return cls._eval(ftype)
 
     def js_to_py_dict(self, ft, js, d, p):
-        if 'Dict' not in ft:
+        if 'Dict[' not in ft:
             return js
         else:
             is_union = False
@@ -141,16 +141,27 @@ class SketchToPy:
     def js_to_union(self, ft, js, d, p):
         avtypes = ft.split('Union[')[1].split(']')[0].split(',')
         for av in avtypes:
+            av = av.strip()
             if av == 'str':
                 if type(js) is str:
                     return js
                 continue
-            av = self.str_to_type(av)
-            test = av().__dict__
+            if av == 'dict' and type(js) is dict:
+                return js
+            avt = self.str_to_type(av)
+            if 'typing.Dict' in str(avt) and type(js) == dict:
+                if '_class' in js:
+                    continue
+                if 'symbolID' in js:
+                    continue
+                else:
+                    return self.js_to_py(avt, js, d, p)
+
+            test = avt().__dict__
             if '_class' in js and '_class' in test and js['_class'] == test['_class']:
-                return self.js_to_py(av, js, d, p)
-            elif 'symbolID' in test:
-                return self.js_to_py(av, js, d, p)
+                return self.js_to_py(avt, js, d, p)
+            elif 'symbolID' in test and 'SymbolOverride' in av:
+                return self.js_to_py(avt, js, d, p)
         print('Unknown value %s for union type %s at %s' % (js, ft, p))
         return js
 
@@ -169,7 +180,7 @@ class SketchToPy:
             return cls(js)
         elif 'float' in x:
             return float(js)
-        elif 'int' in x:
+        elif 'int' in x and not 'sketch_types' in x:
             return int(js)
         elif 'str' in x:
             return js
@@ -194,7 +205,8 @@ class SketchToPy:
             unknown_keys = available_keys.difference(optional_keys)
 
             if len(missing_keys) > 0:
-                print('Missing some properties required by type file, but not found in sketch file in %s [%s]: %s' % (p, x, missing_keys))
+                print('Missing some properties required by type file, but not found in sketch file in %s [%s]: %s' % (
+                    p, x, missing_keys))
 
             if len(unknown_keys) > 0:
                 print('Found unknown props in sketch file in %s with type %s' % (p, x))
@@ -305,7 +317,7 @@ class AdvancedEncoder(JSONEncoder):
 
     def default(self, o):
         try:
-            if 'mappingproxy' in str(type(o)) : # Enum
+            if 'mappingproxy' in str(type(o)):  # Enum
                 return
 
             d = copy.deepcopy(o.__dict__)
@@ -320,4 +332,3 @@ class PyToSketch:
     @classmethod
     def write(cls, obj):
         return json.dumps(obj, cls=AdvancedEncoder)
-
