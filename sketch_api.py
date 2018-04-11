@@ -1,7 +1,13 @@
+import json
+import zipfile
+from io import BytesIO
+from typing import List, Dict
+
+import numpy as np
+from PIL import Image, ImageFile
+
 import sketch_io
 import sketch_types
-import zipfile
-import json
 
 
 class SketchFile:
@@ -14,13 +20,15 @@ class SketchFile:
         return SketchFile()
 
     def __init__(self, path=None):
-        self.contents = {}
+        self._file_contents = {}
         self.file_mapping = {}
         self.symbol_mapping = {}
 
         self.sketch_meta: sketch_types.SketchMeta = sketch_types.SketchMeta()
         self.sketch_user: sketch_types.SketchUserData = {}
         self.sketch_document: sketch_types.SketchDocument = sketch_types.SketchDocument()
+
+        self.images: Dict[str, np.ndarray] = {}
 
         if path is not None:
             f = zipfile.ZipFile(path, mode='r')
@@ -30,12 +38,11 @@ class SketchFile:
                 if info.filename.endswith(".json"):
                     j = json.loads(fc)
 
-                    self.contents[info.filename] = j
-                    self.file_mapping['preview'] = info.filename
+                    self._file_contents[info.filename] = j
 
                     if 'pages/' in info.filename:
                         if len(j['layers']) > 0 and j['layers'][0]['_class'] == 'symbolMaster':
-                            self.symbol_file = info.filename
+                            self._symbol_file = info.filename
                             # p(j)
                             for s in j['layers']:
                                 if 'symbolID' not in s:
@@ -46,37 +53,70 @@ class SketchFile:
 
                         self.file_mapping[j['name']] = info.filename
 
+                elif 'images/' in info.filename or '.png' in info.filename:
+                    try:
+                        img: ImageFile = Image.open(BytesIO(fc))
+                        img = np.array(img)
+                        img.setflags(write=True)
+                        self.images[info.filename] = img
+                    except OSError as e:
+                        print('Couldnt load image from file %s' % info.filename)
+
+                    self._file_contents[info.filename] = img
                 else:
-                    self.contents[info.filename] = fc
+                    self._file_contents[info.filename] = fc
 
             f.close()
 
-            self._read_contents_to_objects()
+            self._read_json_to_objects()
 
     def save_to(self, fn):
         c = zipfile.ZipFile(fn, mode='w')
-        for fname, fcont in self.contents.items():
-            # print(fname, type(fcont))
-            if fname.endswith(".json"):
-                c.writestr(fname, json.dumps(fcont))
-            else:
-                c.writestr(fname, fcont)
+
+        _contents = self._convert_objects_to_json()
+        print('Saving dict with %d entries.' % len(_contents))
+        for fname, fcont in _contents.items():
+            c.writestr(fname, fcont)
 
         c.close()
 
-    def _read_contents_to_objects(self):
-        self.sketch_meta = sketch_io.parse_meta(self.contents['meta.json'])
+    def _read_json_to_objects(self):
+        self._parser = sketch_io.SketchToPy()
+        self.sketch_meta: sketch_types.SketchMeta = self._parser.parse_meta(self._file_contents['meta.json'])
+        self.sketch_document: sketch_types.SketchDocument = self._parser.parse_document(
+            self._file_contents['document.json'])
+        self.sketch_user: sketch_types.SketchUserData = self._parser.parse_user(self._file_contents['user.json'])
+        self.sketch_pages: List[sketch_types.SketchPage] = []
 
-        self.sketch_document = sketch_io.parse_document(self.contents['document.json'])
-
-        self.sketch_user = sketch_io.parse_user(self.contents['user.json'])
-
-        self.sketch_pages = []
-
-        for p, v in self.contents.items():
+        for p, v in self._file_contents.items():
             if 'pages/' in p:
-                self.sketch_pages.append(sketch_io.parse_page(v, p))
+                self.sketch_pages.append(self._parser.parse_page(v, p))
+
+    def get_object_by_id(self, idx: sketch_types.SJObjectId):
+        return self._parser._object_maps[idx]
+
+    def get_objects_by_class(self, cls: str):
+        return self._parser._class_maps[cls]
+
+    def _convert_objects_to_json(self):
+        _contents = {}
+        _contents['meta.json'] = sketch_io.PyToSketch.write(self.sketch_meta)  # meta.json
+        _contents['document.json'] = sketch_io.PyToSketch.write(self.sketch_document)  # document.json
+        _contents['user.json'] = sketch_io.PyToSketch.write(self.sketch_user)  # user.json
+
+        for page in self.sketch_pages:
+            _contents['pages/' + page.do_objectID + '.json'] = sketch_io.PyToSketch.write(page)
+
+        for name, image in self.images.items():
+            bio = BytesIO()
+            img = Image.fromarray(image)
+            img.save(bio, format='png')
+            _contents[name] = bio.getvalue()
+            bio.close()
+
+        return _contents
 
 
 if __name__ == '__main__':
-    file = SketchFile.from_file('Mockup.template.sketch')
+    file = SketchFile.from_file('test.sketch')
+    # file.save_to('test2.sketch')
