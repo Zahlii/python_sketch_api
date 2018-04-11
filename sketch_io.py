@@ -14,6 +14,8 @@ class SketchToPy:
     type_map_ext = {}
     type_map = {}
 
+
+
     @classmethod
     def _get_type(cls, cls_name, field):
         if cls_name in cls.type_map_ext and field in cls.type_map_ext[cls_name]:
@@ -68,6 +70,8 @@ class SketchToPy:
     def __init__(self):
         self._object_maps: Dict[SJObjectId, Any] = {}
         self._class_maps: Dict[str, List[Any]] = {}
+
+        self._observed_fields_map: Dict[str, set] = {}
 
     def parse_meta(self, meta_contents):
         # pprint(meta_contents)
@@ -191,6 +195,11 @@ class SketchToPy:
 
             available_keys = set(js.keys())
             optional_keys = set(ret.__dict__.keys())
+
+            if x in self._observed_fields_map:
+                self._observed_fields_map[x] = self._observed_fields_map[x].intersection(available_keys)
+            else:
+                self._observed_fields_map[x] = available_keys
 
             for bcls in cls.__bases__:
                 if bcls is object:

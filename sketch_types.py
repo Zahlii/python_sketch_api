@@ -9,11 +9,11 @@ from biplist import readPlistFromString, writePlistToString
 class SJRect:
     def __init__(self):
         self._class: str = 'rect'
-        self.constrainProportions: bool = None
-        self.x: float = None
-        self.y: float = None
-        self.width: float = None
-        self.height: float = None
+        self.constrainProportions: bool = False
+        self.x: float = 0
+        self.y: float = 0
+        self.width: float = 300
+        self.height: float = 300
 
 
 SJObjectId = NewType('SJObjectId', str)
@@ -21,7 +21,7 @@ SJObjectId = NewType('SJObjectId', str)
 
 def get_object_id():
     p = '00CC4CF3-9934-4ED2-9A53-5DD12A47F9B7'.split('-')
-    o = None
+    o = []
     for part in p:
         x = int(len(part) / 2)
         o.append(secrets.token_hex(x))
@@ -34,11 +34,12 @@ class SJIDBase:
         self.do_objectID: SJObjectId = None  # get_object_id()
 
 
+# Rect encoded as a string, ie {{0, 0}, {10, 30}}
 SJStringRect = NewType('SJStringRect', str)
 
 
 class SJColorNoClass:
-    def __init__(self, r=None, g=None, b=None, a=1.0):
+    def __init__(self, r=0.0, g=0.0, b=0.0, a=1.0):
         self.red: float = r
         self.green: float = g
         self.blue: float = b
@@ -46,14 +47,14 @@ class SJColorNoClass:
 
 
 class SJColor(SJColorNoClass):
-    def __init__(self, r=None, g=None, b=None, a=1.0):
+    def __init__(self, r=0.0, g=0.0, b=0.0, a=1.0):
         super().__init__(r, g, b, a)
         self._class: str = 'color'
 
 
 class SJColorPalette:
     WHITE = SJColor(r=1.0, g=1.0, b=1.0)
-    BLACK = SJColor(r=None, g=None, b=None)
+    BLACK = SJColor(r=0, g=0, b=0)
 
 
 class ResizingType(Enum):
@@ -173,12 +174,12 @@ class ExportOptionsFormat(Enum):
 class ExportFormat:
     def __init__(self):
         self._class: str = 'exportFormat'
-        self.absoluteSize: int = None
+        self.absoluteSize: int = 1
         self.fileFormat: ExportOptionsFormat = 'png'
-        self.name: str = None
-        self.namingScheme: int = None
-        self.scale: int = None
-        self.visibleScaleType: int = None
+        self.name: str = ''
+        self.namingScheme: int = 0
+        self.scale: int = 1
+        self.visibleScaleType: int = 0
 
 
 class TextAlignmentEnum(Enum):
@@ -198,8 +199,8 @@ class CurveMode(Enum):
 class SJBorder:
     def __init__(self):
         self._class: str = 'border'
-        self.isEnabled: bool = None
-        self.color: SJColor = None
+        self.isEnabled: bool = True
+        self.color: SJColor = SJColorPalette.BLACK
         self.fillType: FillTypeEnum = None
         self.position: BorderPositionEnum = None
         self.thickness: float = None
@@ -216,91 +217,94 @@ FloatList = List[float]
 class SJBorderOptions:
     def __init__(self):
         self._class: str = 'borderOptions'
-        self.isEnabled: bool = None
-        self.dashPattern: FloatList = None
-        self.lineCapStyle: BorderLineCapStyle = None
-        self.lineJoinStyle: BorderLineJoinStyle = None
+        self.isEnabled: bool = True
+        self.dashPattern: FloatList = []
+        self.lineCapStyle: BorderLineCapStyle = BorderLineCapStyle.Round
+        self.lineJoinStyle: BorderLineJoinStyle = BorderLineJoinStyle.Round
 
 
 class SJFill:
     def __init__(self):
         self._class: str = 'fill'
-        self.isEnabled: bool = None
-        self.color: SJColor = None
-        self.fillType: FillTypeEnum = None
+        self.isEnabled: bool = True
+        self.color: SJColor = SJColorPalette.WHITE
+        self.fillType: FillTypeEnum = FillTypeEnum.Solid
         self.image: SJImageDataReference = None
-        self.noiseIndex: float = None
-        self.noiseIntensity: float = None
-        self.patternFillType: PatternFillTypeEnum = None
-        self.patternTileScale: float = None
+        self.noiseIndex: float = 0
+        self.noiseIntensity: float = 0
+        self.patternFillType: PatternFillTypeEnum = PatternFillTypeEnum.Fill
+        self.patternTileScale: float = 0
         self.gradient: SJGradient = None
         self.do_objectID: SJObjectId = None
 
-
-SJShadow__class = Enum('SJShadow__class', {"shadow": "shadow", "innerShadow": "innerShadow"})
 
 
 class SJGradientStop:
     def __init__(self):
         self._class: str = 'gradientStop'
-        self.position: float = None
-        self.color: SJColor = None
+        self.position: float = 0
+        self.color: SJColor = SJColorPalette.WHITE
 
 
 class SJGradient:
     def __init__(self):
         self._class: str = 'gradient'
-        self.elipseLength: int = None
-        setattr(self, 'from', None)
+        self.elipseLength: int = 0
+        setattr(self, 'from', '{0, 0}')
         # self.from: PointString = None
-        self.to: PointString = None
-        self.gradientType: GradientTypeEnum = None
-        self.stops: List[SJGradientStop] = None
+        self.to: PointString = '{0, 0}'
+        self.gradientType: GradientTypeEnum = GradientTypeEnum.Linear
+        self.stops: List[SJGradientStop] = []
 
 
 class SJContextSettings:
     def __init__(self):
         self._class: str = 'graphicsContextSettings'
-        self.blendMode: BlendModeEnum = None
-        self.opacity: float = None
+        self.blendMode: BlendModeEnum = BlendModeEnum.Color
+        self.opacity: float = 1.0
 
 
 class SJShadow:
     def __init__(self):
-        self._class: SJShadow__class = 'shadow'
+        self._class: str = 'shadow'
         self.isEnabled: bool = None
         self.blurRadius: float = None
         self.color: SJColor = None
-        self.contextSettings: SJContextSettings = None
+        self.contextSettings: SJContextSettings = SJContextSettings()
         self.offsetX: float = None
         self.offsetY: float = None
         self.spread: float = None
 
 
+class SJInnerShadow(SJShadow):
+    def __init__(self):
+        super().__init__()
+        self._class: str = 'innerShadow'
+
 SJBorderList = List[SJBorder]
-SJShadowList = List[SJBorder]
+SJShadowList = List[SJShadow]
+SJInnerShadowList = List[SJInnerShadow]
 SJFillList = List[SJFill]
 
 
 class SJBlur:
     def __init__(self):
         self._class: str = 'blur'
-        self.isEnabled: bool = None
-        self.center: PointString = None
-        self.motionAngle: float = None
-        self.radius: int = None
-        self.type: BlurTypeEnum = None
+        self.isEnabled: bool = True
+        self.center: PointString = '{0, 0}'
+        self.motionAngle: float = 0.0
+        self.radius: int = 0
+        self.type: BlurTypeEnum = BlurTypeEnum.GaussianBlur
 
 
 class SJColorControls:
     def __init__(self):
         self._class: str = 'colorControls'
-        self.isEnabled: bool = None
-        self.brightness: int = None
-        self.contrast: int = None
-        self.contrast: int = None
-        self.hue: int = None
-        self.saturation: int = None
+        self.isEnabled: bool = True
+        self.brightness: int = 0
+        self.contrast: int = 0
+        self.hue: int = 0
+        self.saturation: int = 0
 
 
 class SJStyle:
@@ -310,10 +314,10 @@ class SJStyle:
         self.borderOptions: SJBorderOptions = None
         self.borders: SJBorderList = None
         self.shadows: SJShadowList = None
-        self.innerShadows: SJShadowList = None
+        self.innerShadows: SJInnerShadowList = None
         self.fills: SJFillList = None
         self.textStyle: SJTextStyle = None
-        self.miterLimit: float = 10.0
+        self.miterLimit: int = 10
         self.startDecorationType: LineDecorationTypeEnum = LineDecorationTypeEnum._None
         self.endDecorationType: LineDecorationTypeEnum = LineDecorationTypeEnum._None
         self.blur: SJBlur = None
@@ -324,10 +328,10 @@ class SJStyle:
 
 class SJTextStyleAttribute:
     def __init__(self):
-        self.MSAttributedStringFontAttribute: KeyValueArchive = None
+        self.MSAttributedStringFontAttribute: KeyValueArchive = KeyValueArchive()
         self.kerning: int = None
         self.MSAttributedStringColorAttribute: SJColor = None
-        self.paragraphStyle: KeyValueArchive = None
+        self.paragraphStyle: KeyValueArchive = KeyValueArchive()
         self.MSAttributedStringColorDictionaryAttribute: SJColorNoClass = None
         self.MSAttributedStringTextTransformAttribute: int = None
         self.strikethroughStyle: int = None
@@ -337,8 +341,8 @@ class SJTextStyleAttribute:
 class SJTextStyle:
     def __init__(self):
         self._class: str = 'textStyle'
-        self.verticalAlignment: TextAlignmentEnum = None  # TODO enum?
-        self.encodedAttributes: SJTextStyleAttribute = None
+        self.verticalAlignment: TextAlignmentEnum = 0  # TODO enum?
+        self.encodedAttributes: SJTextStyleAttribute = SJTextStyleAttribute()
 
 
 class SJSharedStyle(SJIDBase):
@@ -350,40 +354,41 @@ class SJSharedStyle(SJIDBase):
 
 
 SJSharedStyleList = List[SJSharedStyle]
+SJSharedTextStyleList = List[SJSharedStyle]
 
 
 class SJSharedTextStyleContainer:
     def __init__(self):
         self._class: str = 'sharedTextStyleContainer'
-        self.objects: SJSharedStyleList = None
+        self.objects: SJSharedStyleList = []
 
 
 class SJSharedStyleContainer:
     def __init__(self):
         self._class: str = 'sharedStyleContainer'
-        self.objects: SJSharedStyleList = None
+        self.objects: SJSharedTextStyleList = []
 
 
 class SJSharedSymbolContainer:
     def __init__(self):
-        self._class: str = 'sharedStyleContainer'
-        self.objects: SJSharedStyleList = None  # TODO not clear
+        self._class: str = 'symbolContainer'
+        self.objects: List = [] # TODO not clear
 
 
 class ExportOptions:
     def __init__(self):
         self._class: str = 'exportOptions'
-        self.exportFormats: List[ExportFormat] = None
-        self.includedLayerIds: List = None
-        self.layerOptions: float = None
-        self.shouldTrim: bool = None
+        self.exportFormats: List[ExportFormat] = []
+        self.includedLayerIds: List = []
+        self.layerOptions: int = 0
+        self.shouldTrim: bool = False
 
 
 class RulerData:
     def __init__(self):
         self._class: str = 'rulerData'
-        self.base: float = None
-        self.guides: FloatList = None
+        self.base: int = 0
+        self.guides: FloatList = []
 
 
 class SJImageDataReference_data:
@@ -399,7 +404,7 @@ class SJImageDataReference_sha1:
 class SJImageDataReference:
     def __init__(self):
         self._class: str = 'MSJSONOriginalDataReference'
-        self._ref: str = None
+        self._ref: str = ''
         self._ref_class: str = 'MSImageData'
         self.data: SJImageDataReference_data = None
         self.sha1: SJImageDataReference_sha1 = None
@@ -412,13 +417,13 @@ class SJCurvePoint:
     def __init__(self):
         self._class: str = 'curvePoint'
         self.do_objectID: SJObjectId = None
-        self.cornerRadius: float = None
-        self.curveFrom: PointString = None
-        self.curveMode: CurveMode = None
-        self.curveTo: PointString = None
-        self.hasCurveFrom: bool = None
-        self.hasCurveTo: bool = None
-        self.point: PointString = None
+        self.cornerRadius: float = 1.0
+        self.curveFrom: PointString = '{0, 0}'
+        self.curveMode: CurveMode = CurveMode.Straight
+        self.curveTo: PointString = '{0, 0}'
+        self.hasCurveFrom: bool = True
+        self.hasCurveTo: bool = True
+        self.point: PointString = '{0, 0}'
 
 
 SJCurvePointList = List[SJCurvePoint]
@@ -428,27 +433,27 @@ class _SJLayerBase(SJIDBase):
     def __init__(self):
         super().__init__()
         self.name: str = ''
-        self.nameIsFixed: bool = None
-        self.isVisible: bool = None
-        self.isLocked: bool = None
+        self.nameIsFixed: bool = False
+        self.isVisible: bool = True
+        self.isLocked: bool = False
         self.layerListExpandedType: LayerListExpandedType = LayerListExpandedType.Collapsed
-        self.hasClickThrough: bool = None
-        self.layers: SJLayerList = None
-        self.style: SJStyle = None
-        self.isFlippedHorizontal: bool = None
-        self.isFlippedVertical: bool = None
-        self.rotation: float = None
-        self.shouldBreakMaskChain: bool = None
+        self.hasClickThrough: bool = True
+        self.layers: SJLayerList = []
+        self.style: SJStyle = SJStyle()
+        self.isFlippedHorizontal: bool = False
+        self.isFlippedVertical: bool = False
+        self.rotation: int = 0
+        self.shouldBreakMaskChain: bool = False
         self.resizingType: ResizingType = ResizingType.Stretch
-        self.exportOptions: ExportOptions = None
-        self.includeInCloudUpload: bool = None
+        self.exportOptions: ExportOptions = ExportOptions()
+        self.includeInCloudUpload: bool = True
         self.backgroundColor: SJColor = None
         self.hasBackgroundColor: bool = None
-        self.horizontalRulerData: RulerData = None
-        self.verticalRulerData: RulerData = None
+        self.horizontalRulerData: RulerData = RulerData()
+        self.verticalRulerData: RulerData = RulerData()
         self.includeBackgroundColorInExport: bool = None
-        self.resizingConstraint: int = None
-        self.frame: SJRect = None
+        self.resizingConstraint: int = 63
+        self.frame: SJRect = SJRect()
         self.originalObjectID: SJObjectId = None
         self.userInfo: dict = None
         self.resizesContent: bool = None
@@ -459,24 +464,24 @@ class _SJLayerBase(SJIDBase):
 class _SJArtboardBase(_SJLayerBase):
     def __init__(self):
         super().__init__()
-        self.frame: SJRect = None
+        self.frame: SJRect = SJRect()
 
 
 class SJSimpleGrid:
     def __init__(self):
         self._class: str = 'simpleGrid'
-        self.isEnabled: bool = None
-        self.gridSize: int = None
-        self.thickGridTimes: int = None
+        self.isEnabled: bool = True
+        self.gridSize: int = 0
+        self.thickGridTimes: int = 0
 
 
 class SJSymbolMaster(_SJArtboardBase):
     def __init__(self):
         super().__init__()
         self._class: str = 'symbolMaster'
-        self.includeBackgroundColorInInstance: bool = None
-        self.symbolID: SJObjectId = None
-        self.changeIdentifier: int = None
+        self.includeBackgroundColorInInstance: bool = False
+        self.symbolID: SJObjectId = ''
+        self.changeIdentifier: int = 0
         self.grid: SJSimpleGrid = None
 
 
@@ -486,25 +491,25 @@ SJSymbolInstanceLayer_overrides = Dict[SJObjectId, Union[str, SJImageDataReferen
 class SJLayoutGrid:
     def __init__(self):
         self._class: str = 'layoutGrid'
-        self.isEnabled: bool = None
-        self.columnWidth: float = None
-        self.drawHorizontal: bool = None
-        self.drawHorizontalLines: bool = None
-        self.drawVertical: bool = None
-        self.gutterHeight: int = None
-        self.gutterWidth: int = None
-        self.guttersOutside: bool = None
-        self.horizontalOffset: int = None
-        self.numberOfColumns: int = None
-        self.rowHeightMultiplication: int = None
-        self.totalWidth: int = None
+        self.isEnabled: bool = True
+        self.columnWidth: float = 0
+        self.drawHorizontal: bool = False
+        self.drawHorizontalLines: bool = False
+        self.drawVertical: bool = False
+        self.gutterHeight: int = 0
+        self.gutterWidth: int = 0
+        self.guttersOutside: bool = False
+        self.horizontalOffset: int = 0
+        self.numberOfColumns: int = 0
+        self.rowHeightMultiplication: int = 0
+        self.totalWidth: int = 0
 
 
 class SJOverride:
     def __init__(self):
         self._class: str = 'overrideValue'
-        self.overrideName: SJObjectId = None
-        self.value: str = None
+        self.overrideName: SJObjectId = ''
+        self.value: str = ''
         self.do_objectID: SJObjectId = None
 
 
@@ -513,17 +518,17 @@ class SJSymbolInstanceLayer(_SJLayerBase):
         super().__init__()
         self._class: str = 'symbolInstance'
 
-        self.horizontalSpacing: float = None
-        self.verticalSpacing: float = None
+        self.horizontalSpacing: float = 0
+        self.verticalSpacing: float = 0
         self.masterInfluenceEdgeMinXPadding: float = None
         self.masterInfluenceEdgeMaxXPadding: float = None
         self.masterInfluenceEdgeMinYPadding: float = None
         self.masterInfluenceEdgeMaxYPadding: float = None
-        self.symbolID: SJObjectId = None
+        self.symbolID: SJObjectId = ''
 
-        self.overrides: SJSymbolInstanceLayer_overrides = None
-        self.overrideValues: List[SJOverride] = None
-        self.scale: int = None
+        self.overrides: SJSymbolInstanceLayer_overrides = []
+        self.overrideValues: List[SJOverride] = []
+        self.scale: int = 1
 
         self.changeIdentifier: int = None
         self.includeBackgroundColorInInstance: bool = None
@@ -552,12 +557,12 @@ class SJTextLayer(_SJLayerBase):
     def __init__(self):
         super().__init__()
         self._class: str = 'text'
-        self.attributedString: MSAttributedString = None
-        self.glyphBounds: SJStringRect = None
-        self.lineSpacingBehaviour: int = None
-        self.dontSynchroniseWithSymbol: bool = None
-        self.automaticallyDrawOnUnderlyingPath: bool = None
-        self.textBehaviour: int = None
+        self.attributedString: MSAttributedString = MSAttributedString()
+        self.glyphBounds: SJStringRect = '{}{}'
+        self.lineSpacingBehaviour: int = 0
+        self.dontSynchroniseWithSymbol: bool = False
+        self.automaticallyDrawOnUnderlyingPath: bool = False
+        self.textBehaviour: int = 0
 
 
 class SJGroupLayer(_SJLayerBase):
@@ -570,61 +575,62 @@ class SJShapeGroupLayer(_SJLayerBase):
     def __init__(self):
         super().__init__()
         self._class: str = 'shapeGroup'
-        self.style: SJStyle = None
-        self.hasClippingMask: bool = None
-        self.windingRule: int = None  # TODO enum
-        self.clippingMaskMode: MaskModeEnum = None
+
+        self.hasClippingMask: bool = False
+        self.windingRule: int = 0  # TODO enum
+        self.clippingMaskMode: MaskModeEnum = MaskModeEnum.Alpha
 
 
 class SJShapeLayer(_SJLayerBase):
     def __init__(self):
         super().__init__()
         self._class: str = None
-        self.points: SJCurvePointList = None
-        self.edited: bool = None
-        self.isClosed: bool = None
-        self.pointRadiusBehaviour: int = None
-        self.booleanOperation: BooleanOperation = None
-        self.fixedRadius: int = None
-        self.hasConvertedToNewRoundCorners: bool = None
+        self.points: SJCurvePointList = []
+        self.edited: bool = True
+        self.isClosed: bool = True
+        self.pointRadiusBehaviour: int = 0
+        self.booleanOperation: BooleanOperation = BooleanOperation.Union
+        self.fixedRadius: int = 0
+        self.hasConvertedToNewRoundCorners: bool = True
 
 
 class SJShapeRectangleLayer(SJShapeLayer):
     def __init__(self):
         super().__init__()
         self._class: str = 'rectangle'
-        self.path: SJPath = None
+        self.path: SJPath = SJPath()
 
 
 class SJShapeOvalLayer(SJShapeLayer):
     def __init__(self):
         super().__init__()
         self._class: str = 'oval'
-        self.path: SJPath = None
+        self.path: SJPath = SJPath()
 
 
 class SJShapePathLayer(SJShapeLayer):
     def __init__(self):
         super().__init__()
         self._class: str = 'shapePath'
-        self.path: SJPath = None
+        self.path: SJPath = SJPath()
 
 
 EncodedBase64BinaryPlist = NewType('EncodedBase64BinaryPlist', str)
 
 
+
 class SJPath:
     def __init__(self):
         self._class: str = 'path'
-        self.isClosed: bool = None
-        self.points: SJCurvePointList = None
-        self.pointRadiusBehaviour: int = None
+        self.isClosed: bool = True
+        self.points: SJCurvePointList = []
+        self.pointRadiusBehaviour: int = 0
 
 
 class KeyValueArchive:
     def __init__(self):
         self._archive: EncodedBase64BinaryPlist = EncodedBase64BinaryPlist('')
-        self._raw: str = None  # cached copy of dict
+        self._raw: {} = None  # cached copy of dict
 
     def get_archive(self):
         if self._raw is not None:
@@ -652,7 +658,7 @@ NSColorArchive = NewType('NSColorArchive', KeyValueArchive)
 class MSAttributedString:
     def __init__(self):
         self._class: str = 'MSAttributedString'
-        self.archivedAttributedString: KeyValueArchive = None
+        self.archivedAttributedString: KeyValueArchive = KeyValueArchive()
 
     def get_text(self):
         return self.archivedAttributedString.get_val(2)
@@ -665,7 +671,7 @@ class MSAttributedString:
         a = self.archivedAttributedString.get_val(26)
         b = self.archivedAttributedString.get_val(27)
         g = self.archivedAttributedString.get_val(28)
-        ret = None
+        ret = SJColor()
         ret.alpha = a
         ret.red = r
         ret.green = g
@@ -694,7 +700,7 @@ class MSAttributedString:
 
 class MSJSONFileReference:
     def __init__(self):
-        self._class: str = 'MSJSonFileReference'
+        self._class: str = 'MSJSONFileReference'
         self._ref_class: str = 'MSImmutablePage'
         self._ref: str = ''  # i.e. pages/doObjectID
 
@@ -725,10 +731,10 @@ SJColorList = List[SJColor]
 class SJAssetCollection:
     def __init__(self):
         self._class: str = 'assetCollection'
-        self.colors: SJColorList = None
-        self.gradients: List[SJGradient] = None  # TODO
-        self.images: List = None  # TODO
-        self.imageCollection: SJImageCollection = None
+        self.colors: SJColorList = []
+        self.gradients: List[SJGradient] = []  # TODO
+        self.images: List = []  # TODO
+        self.imageCollection: SJImageCollection = SJImageCollection()
 
 
 MSJSONFileReferenceList = List[MSJSONFileReference]
@@ -742,14 +748,14 @@ class SketchDocument(SJIDBase):
         self._class: str = 'document'
         self.colorSpace: int = 0
         self.currentPageIndex: int = 0
-        self.foreignSymbols: List = None
-        self.assets: SJAssetCollection = None
+        self.foreignSymbols: List = []
+        self.assets: SJAssetCollection = SJAssetCollection()
 
-        self.layerTextStyles: SJSharedTextStyleContainer = None
-        self.layerStyles: SJSharedStyleContainer = None
-        self.layerSymbols: SJSharedSymbolContainer = None
+        self.layerTextStyles: SJSharedTextStyleContainer = SJSharedTextStyleContainer()
+        self.layerStyles: SJSharedStyleContainer = SJSharedStyleContainer()
+        self.layerSymbols: SJSharedSymbolContainer = SJSharedSymbolContainer()
 
-        self.pages: MSJSONFileReferenceList = None
+        self.pages: MSJSONFileReferenceList = []
         self.userInfo: dict = None  # TODO
 
 
@@ -758,11 +764,6 @@ class SketchPage(_SJLayerBase):
     def __init__(self):
         super().__init__()
         self._class: str = 'page'
-        self.exportOptions: ExportOptions = None
-        self.frame: SJRect = None
-        self.resizingConstraint: int = 0  # TODO
-        self.horizontalRulerData: RulerData = None
-        self.verticalRulerData: RulerData = None
 
     def get_ref(self):
         return 'pages/%s.json' % self.do_objectID
@@ -770,8 +771,8 @@ class SketchPage(_SJLayerBase):
 
 class SketchUserDataEntry:
     def __init__(self):
-        self.scrollOrigin: PointString = None
-        self.zoomValue: float = None
+        self.scrollOrigin: PointString = '{0, 0}'
+        self.zoomValue: int = 1
         self.pageListHeight: int = None
         self.exportableLayerSelection: List[SJObjectId] = None
         self.cloudShare: bool = None  # TODO check true type
@@ -788,7 +789,7 @@ SJPageArtboardMappingEntryDict = Dict[SJObjectId, SJArtboardDescription]
 class SJPageArtboardMappingEntry:
     def __init__(self):
         self.name: str = ''
-        self.artboards: SJPageArtboardMappingEntryDict = None
+        self.artboards: SJPageArtboardMappingEntryDict = {}
 
 
 # user.json
@@ -803,9 +804,9 @@ class SketchCreateMeta:
         self.app: str = 'com.bohemiancoding.sketch3'
         self.autosaved: int = None
         self.variant: str = 'NONAPPSTORE'
-        self.commit: str = ''
+        self.commit: str = '3ddf4a853aaf3543a90063fa41305860bd6d6e7a'
         self.version: int = 101
-        self.appVersion: str = '49'
+        self.appVersion: str = '49.2'
 
 
 StrList = List[str]
@@ -816,7 +817,8 @@ class SketchMeta(SketchCreateMeta):
     def __init__(self):
         super().__init__()
         self.pagesAndArtboards: SJPageArtboardMapping = {}
-        self.fonts: StrList = None
+        self.fonts: StrList = []
 
-        self.created: SketchCreateMeta = None
-        self.saveHistory: StrList = None  # Entries are variant.build
+        self.autosaved: int = 0
+        self.created: SketchCreateMeta = SketchCreateMeta()
+        self.saveHistory: StrList = ['NONAPPSTORE.51160']  # Entries are variant.build
