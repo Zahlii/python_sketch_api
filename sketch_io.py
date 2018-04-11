@@ -317,23 +317,42 @@ class AdvancedEncoder(JSONEncoder):
         """
         # For Python 3, write `list(d.items())`; `d.items()` won’t work
         # For Python 2, write `d.items()`; `d.iteritems()` won’t work
-        for key, value in list(d.items()):
-            if value is None:
-                del d[key]
-            elif isinstance(value, dict):
-                self.del_none(value)
-        return d  # For convenience
+        if isinstance(d, dict):
+            for key, value in list(d.items()):
+                if key == '_parent':
+                    del d[key]
+                elif value is None:
+                    del d[key]
+                else:
+                    self.del_none(d[key])
+
+        elif isinstance(d, list):
+            for i, v in enumerate(d):
+                self.del_none(v)
+
+        return d
 
     def default(self, o):
         try:
             stype = str(type(o))
+
+            if type(o) is dict:
+                if '_parent' in o:
+                    del o['_parent']
+
             if 'mappingproxy' in stype:  # Enum
                 return None
 
             if 'enum' in stype:
                 return o.value
 
+            if not hasattr(o,'__dict__'):
+                return None
+
             d = copy.copy(o.__dict__)
+            if '_parent' in d:
+                del d['_parent']
+
             d = self.del_none(d)
             return d
         except Exception as e:
@@ -344,4 +363,4 @@ class AdvancedEncoder(JSONEncoder):
 class PyToSketch:
     @classmethod
     def write(cls, obj):
-        return json.dumps(obj, cls=AdvancedEncoder)
+        return json.dumps(obj, cls=AdvancedEncoder,check_circular=False)

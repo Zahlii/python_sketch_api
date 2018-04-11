@@ -1,5 +1,6 @@
 import json
 import zipfile
+from enum import Enum
 from io import BytesIO
 from typing import List, Dict
 
@@ -86,8 +87,13 @@ class SketchFile:
 
             self._read_json_to_objects()
 
+        #_link_to_parent(self.sketch_meta, self)
+        #_link_to_parent(self.sketch_document, self)
+        #_link_to_parent(self.sketch_user, self)
+        #_link_to_parent(self.sketch_pages, self)
+
     def save_to(self, fn):
-        c = zipfile.ZipFile(fn, mode='w', compression=0)
+        c = zipfile.ZipFile(fn, mode='w', compression=8)
 
         _contents = self._convert_objects_to_json()
         print('Saving dict with %d entries.' % len(_contents))
@@ -110,7 +116,7 @@ class SketchFile:
             if 'pages/' in p:
                 self.sketch_pages.append(self._parser.parse_page(v, p))
 
-    def get_object_by_id(self, idx: sketch_types.SJObjectId):
+    def get_object_by_id(self, idx):
         return self._parser._object_maps[idx]
 
     def get_objects_by_class(self, cls: str):
@@ -146,24 +152,53 @@ class SketchFile:
 
         return _contents
 
-    def add_page(self, name: str, idx: sketch_types.SJObjectId = None):
+    def add_page(self, name: str):
         pg = sketch_types.SketchPage()
-        pg.do_objectID = sketch_types.get_object_id() if idx is None else idx
+        pg.do_objectID = sketch_types.get_object_id()
         pg.name = name
+        _link_to_parent(pg, self)
 
         self.sketch_pages.append(pg)
         ref = sketch_types.MSJSONFileReference()
-        ref._ref = 'pages/%s' % pg.do_objectID
+        ref._ref = pg.get_ref()
 
         self.sketch_document.pages.append(ref)
-
         self.sketch_user[pg.do_objectID] = sketch_types.SketchUserDataEntry()
 
         mapping = sketch_types.SJPageArtboardMappingEntry()
+        _link_to_parent(mapping, self)
         mapping.artboards = {}
         mapping.name = name
 
         self.sketch_meta.pagesAndArtboards[pg.do_objectID] = mapping
+
+        return pg
+
+
+def _link_to_parent(obj, parent=None):
+    if type(obj) in [int, str, bool, float]:
+        return
+    if issubclass(obj.__class__, Enum):
+        return
+
+    if type(obj) is list:
+        for o in obj:
+            _link_to_parent(o, parent)
+        return
+
+    if type(obj) is dict:
+        if parent is not None:
+            obj['_parent'] = parent
+        return
+
+    if hasattr(obj,'__dict__'):
+        for k,v in obj.__dict__.items():
+            if '__' in k or '_parent' in k:
+                continue
+            _link_to_parent(v, obj)
+
+        if parent is not None:
+            setattr(obj,'_parent', parent)
 
 
 def compare_dict(source, target, path=''):
@@ -171,6 +206,11 @@ def compare_dict(source, target, path=''):
         if source != target:
             print('Base Mismatch at %s: %s vs %s' % (path,source,target))
         return
+
+    if type(source) != type(target):
+        print('Base Type Mismatch at %s: %s vs %s' % (path, source, target))
+        return
+
     keys1 = set(source.keys())
     keys2 = set(target.keys())
 
@@ -208,6 +248,15 @@ def compare_dict(source, target, path=''):
                 print('Type mismatch in %s: %s vs %s' % (p,v,t))
 
 
+def check_file(path):
+    fe = SketchFile.from_file(path)
+
+    _target_contents = fe._file_contents
+
+    _contents = fe.save_to('xyz.sketch')
+    compare_dict(_contents, _target_contents)
+
+
 if __name__ == '__main__':
     #
     """import glob
@@ -230,15 +279,21 @@ if __name__ == '__main__':
     import pprint
     pprint.pprint(global_map)"""
 
-    fe = SketchFile.from_file('EMPTY.sketch')
+    fe = SketchFile.create_empty()
 
-    _target_contents = fe._file_contents
+    pg = fe.add_page('Test')
+
+    a = sketch_types.SJArtboardLayer()
+    a.do_objectID = sketch_types.get_object_id()
+    a.name = 'Artboard 123424525245'
+    a.frame.width = 200
+    a.frame.height = 200
+
+    pg.add_artboard(a)
 
 
-    f = SketchFile.create_empty()
-    f.add_page('Page 1', sketch_types.SJObjectId('6B1FB396-B173-463F-B3F7-D72AAC85F9A6'))
-    _contents = f.save_to('EMPTY_PROGRAMMED.sketch')
+    fe.save_to('created.sketch')
 
-    compare_dict(_contents, _target_contents)
 
-    # fe2 = SketchFile.from_file('EMPTY_PROGRAMMED.sketch')
+
+

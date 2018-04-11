@@ -5,6 +5,8 @@ from typing import NewType, Union, List, Dict
 
 from biplist import readPlistFromString, writePlistToString
 
+from sketch_api import SketchFile, _link_to_parent
+
 
 class SJRect:
     def __init__(self):
@@ -203,7 +205,7 @@ class SJBorder:
         self.color: SJColor = SJColorPalette.BLACK
         self.fillType: FillTypeEnum = None
         self.position: BorderPositionEnum = None
-        self.thickness: float = None
+        self.thickness: int = None
         self.contextSettings: SJContextSettings = None
         self.offsetX: int = None
         self.offsetY: int = None
@@ -437,20 +439,20 @@ class _SJLayerBase(SJIDBase):
         self.isVisible: bool = True
         self.isLocked: bool = False
         self.layerListExpandedType: LayerListExpandedType = LayerListExpandedType.Collapsed
-        self.hasClickThrough: bool = True
-        self.layers: SJLayerList = []
-        self.style: SJStyle = SJStyle()
+        self.hasClickThrough: bool = None
+        self.layers: SJLayerList = None
+        self.style: SJStyle = None
         self.isFlippedHorizontal: bool = False
         self.isFlippedVertical: bool = False
         self.rotation: int = 0
         self.shouldBreakMaskChain: bool = False
         self.resizingType: ResizingType = ResizingType.Stretch
         self.exportOptions: ExportOptions = ExportOptions()
-        self.includeInCloudUpload: bool = True
+        self.includeInCloudUpload: bool = None
         self.backgroundColor: SJColor = None
         self.hasBackgroundColor: bool = None
-        self.horizontalRulerData: RulerData = RulerData()
-        self.verticalRulerData: RulerData = RulerData()
+        self.horizontalRulerData: RulerData = None
+        self.verticalRulerData: RulerData = None
         self.includeBackgroundColorInExport: bool = None
         self.resizingConstraint: int = 63
         self.frame: SJRect = SJRect()
@@ -590,8 +592,8 @@ class SJShapeLayer(_SJLayerBase):
         self.isClosed: bool = True
         self.pointRadiusBehaviour: int = 0
         self.booleanOperation: BooleanOperation = BooleanOperation.Union
-        self.fixedRadius: int = 0
-        self.hasConvertedToNewRoundCorners: bool = True
+        self.fixedRadius: int = None
+        self.hasConvertedToNewRoundCorners: bool = None
 
 
 class SJShapeRectangleLayer(SJShapeLayer):
@@ -745,6 +747,8 @@ class SketchDocument(SJIDBase):
     def __init__(self):
         super().__init__()
         # TODO document
+        self._parent: SketchFile = None
+
         self._class: str = 'document'
         self.colorSpace: int = 0
         self.currentPageIndex: int = 0
@@ -764,15 +768,27 @@ class SketchPage(_SJLayerBase):
     def __init__(self):
         super().__init__()
         self._class: str = 'page'
+        self._parent: SketchFile = None
 
     def get_ref(self):
-        return 'pages/%s.json' % self.do_objectID
+        return 'pages/%s' % self.do_objectID
+
+    def add_artboard(self, artboard: SJArtboardLayer):
+        self.layers.append(artboard)
+        x = self._parent.sketch_meta.pagesAndArtboards[self.do_objectID]
+        m = SJArtboardDescription()
+        m.name = artboard.name
+        _link_to_parent(m,artboard)
+        x.artboards[artboard.do_objectID] = m
+        print(x)
+
 
 
 class SketchUserDataEntry:
     def __init__(self):
-        self.scrollOrigin: PointString = '{0, 0}'
-        self.zoomValue: int = 1
+        self._parent: SketchFile = None
+        self.scrollOrigin: PointString = None
+        self.zoomValue: float = None
         self.pageListHeight: int = None
         self.exportableLayerSelection: List[SJObjectId] = None
         self.cloudShare: bool = None  # TODO check true type
@@ -816,9 +832,10 @@ StrList = List[str]
 class SketchMeta(SketchCreateMeta):
     def __init__(self):
         super().__init__()
+        self._parent: SketchFile = None
         self.pagesAndArtboards: SJPageArtboardMapping = {}
         self.fonts: StrList = []
 
         self.autosaved: int = 0
         self.created: SketchCreateMeta = SketchCreateMeta()
-        self.saveHistory: StrList = ['NONAPPSTORE.51160']  # Entries are variant.build
+        self.saveHistory: StrList = []  # Entries are variant.build
