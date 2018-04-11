@@ -21,6 +21,7 @@ class SketchFile:
 
     def __init__(self, path=None):
         self._file_contents = {}
+        self._file_sizes = {}
         self.file_mapping = {}
         self.symbol_mapping = {}
 
@@ -34,7 +35,7 @@ class SketchFile:
             f = zipfile.ZipFile(path, mode='r')
             for info in f.infolist():
                 fc = f.read(info.filename)
-
+                self._file_sizes[info.filename] = len(fc)
                 if info.filename.endswith(".json"):
                     j = json.loads(fc)
 
@@ -59,10 +60,11 @@ class SketchFile:
                         img = np.array(img)
                         img.setflags(write=True)
                         self.images[info.filename] = img
+                        self._file_contents[info.filename] = img
                     except OSError as e:
                         print('Couldnt load image from file %s' % info.filename)
 
-                    self._file_contents[info.filename] = img
+
                 else:
                     self._file_contents[info.filename] = fc
 
@@ -71,7 +73,7 @@ class SketchFile:
             self._read_json_to_objects()
 
     def save_to(self, fn):
-        c = zipfile.ZipFile(fn, mode='w')
+        c = zipfile.ZipFile(fn, mode='w', compression=zipfile.ZIP_DEFLATED)
 
         _contents = self._convert_objects_to_json()
         print('Saving dict with %d entries.' % len(_contents))
@@ -104,6 +106,7 @@ class SketchFile:
         _contents['document.json'] = sketch_io.PyToSketch.write(self.sketch_document)  # document.json
         _contents['user.json'] = sketch_io.PyToSketch.write(self.sketch_user)  # user.json
 
+
         for page in self.sketch_pages:
             _contents['pages/' + page.do_objectID + '.json'] = sketch_io.PyToSketch.write(page)
 
@@ -114,12 +117,17 @@ class SketchFile:
             _contents[name] = bio.getvalue()
             bio.close()
 
+
+        _fsizes = {}
+        for k,v in _contents.items():
+            _fsizes[k] = len(v)
+
         return _contents
 
 
 if __name__ == '__main__':
     # file = SketchFile.from_file('test.sketch')
-    # file = SketchFile.from_file('test.sketch')
+    file = SketchFile.from_file('simple.sketch')
     print('Done1')
-    file2 = SketchFile.from_file('Mockup.template.sketch')
-    # file.save_to('test2.sketch')
+    # file2 = SketchFile.from_file('Mockup.template.sketch')
+    file.save_to('simple2.sketch')

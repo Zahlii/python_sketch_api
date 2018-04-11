@@ -317,10 +317,14 @@ class AdvancedEncoder(JSONEncoder):
 
     def default(self, o):
         try:
-            if 'mappingproxy' in str(type(o)):  # Enum
-                return
+            stype = str(type(o))
+            if 'mappingproxy' in stype:  # Enum
+                return None
 
-            d = copy.deepcopy(o.__dict__)
+            if 'enum' in stype:
+                return o.value
+
+            d = copy.copy(o.__dict__)
             d = self.del_none(d)
             return d
         except Exception as e:
