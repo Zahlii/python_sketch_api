@@ -8,14 +8,6 @@ from biplist import readPlistFromString, writePlistToString
 from sketch_api import SketchFile, _link_to_parent
 
 
-class SJRect:
-    def __init__(self):
-        self._class: str = 'rect'
-        self.constrainProportions: bool = False
-        self.x: float = 0
-        self.y: float = 0
-        self.width: float = 300
-        self.height: float = 300
 
 
 SJObjectId = NewType('SJObjectId', str)
@@ -40,8 +32,19 @@ class SJIDBase:
 SJStringRect = NewType('SJStringRect', str)
 
 
-class SJColorNoClass:
+class SJRect(SJIDBase):
+    def __init__(self):
+        super().__init__()
+        self._class: str = 'rect'
+        self.constrainProportions: bool = False
+        self.x: float = 0
+        self.y: float = 0
+        self.width: float = 300
+        self.height: float = 300
+
+class SJColorNoClass(SJIDBase):
     def __init__(self, r=0.0, g=0.0, b=0.0, a=1.0):
+        super().__init__()
         self.red: float = r
         self.green: float = g
         self.blue: float = b
@@ -377,8 +380,9 @@ class SJSharedSymbolContainer:
         self.objects: List = []  # TODO not clear
 
 
-class ExportOptions:
+class ExportOptions(SJIDBase):
     def __init__(self):
+        super().__init__()
         self._class: str = 'exportOptions'
         self.exportFormats: List[ExportFormat] = []
         self.includedLayerIds: List = []
@@ -386,8 +390,9 @@ class ExportOptions:
         self.shouldTrim: bool = False
 
 
-class RulerData:
+class RulerData(SJIDBase):
     def __init__(self):
+        super().__init__()
         self._class: str = 'rulerData'
         self.base: int = 0
         self.guides: FloatList = []
@@ -476,6 +481,12 @@ class _SJLayerBase(SJIDBase):
         _link_to_parent(r,self)
         self.layers.append(r)
 
+    def remove_layer(self, r):
+        self.layers.remove(r)
+
+    def get_layer_by_type(self, class_str):
+        return [x for x in self.layers if x._class == class_str]
+
 
 class _SJArtboardBase(_SJLayerBase):
     def __init__(self):
@@ -530,6 +541,42 @@ class SJOverride:
 
 
 class SJSymbolInstanceLayer(_SJLayerBase):
+    @staticmethod
+    def create(symbol: SJSymbolMaster, x,y):
+        l = SJSymbolInstanceLayer()
+        l.do_objectID = get_object_id()
+        l.symbolID = symbol.symbolID
+        l.name = symbol.name
+        l.frame.x = x
+        l.frame.y = y
+        l.frame.width = symbol.frame.width
+        l.frame.height = symbol.frame.height
+        return l
+
+    def add_symbol_override(self, target_symbol_id, new_symbol: SJSymbolMaster):
+        ov = SJOverride()
+        ov.do_objectID = get_object_id()
+
+
+        ov.overrideName = target_symbol_id + '_symbolID'
+
+        ov.value = new_symbol.symbolID
+        self.overrideValues.append(ov)
+
+        self.overrides[target_symbol_id] = {
+            'symbolID': new_symbol.symbolID
+        }
+
+    def add_text_override(self, target_text_id, new_text: str):
+        ov = SJOverride()
+        ov.do_objectID = get_object_id()
+        ov.overrideName = target_text_id + '_stringValue'
+        ov.value = new_text
+        self.overrideValues.append(ov)
+
+        self.overrides[target_text_id] = new_text
+
+
     def __init__(self):
         super().__init__()
         self._class: str = 'symbolInstance'
@@ -542,7 +589,7 @@ class SJSymbolInstanceLayer(_SJLayerBase):
         self.masterInfluenceEdgeMaxYPadding: float = None
         self.symbolID: SJObjectId = ''
 
-        self.overrides: SJSymbolInstanceLayer_overrides = []
+        self.overrides: SJSymbolInstanceLayer_overrides = {}
         self.overrideValues: List[SJOverride] = []
         self.scale: int = 1
 

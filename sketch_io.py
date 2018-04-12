@@ -34,7 +34,7 @@ class SketchToPy:
             elif 'class ' in l and ':' in l:
                 is_right = False
 
-            if is_right and 'self.%s' % field in l:
+            if is_right and 'self.%s:' % field in l:
                 if ':' not in l:
                     if '[]' in l:
                         return 'list'

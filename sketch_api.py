@@ -32,8 +32,8 @@ class SketchFile:
     def __init__(self, path=None):
         self._file_contents = {}
         self._file_sizes = {}
-        self.file_mapping = {}
-        self.symbol_mapping = {}
+
+        self._raw = {}
 
         self.sketch_meta: sketch_types.SketchMeta = sketch_types.SketchMeta()
         self.sketch_user: sketch_types.SketchUserData = {}
@@ -50,24 +50,15 @@ class SketchFile:
 
                 # print(info.filename, info.compress_type)
                 fc = f.read(info.filename)
+
+                self._raw[info.filename] = fc
+
+
                 self._file_sizes[info.filename] = len(fc)
                 if info.filename.endswith(".json"):
                     j = json.loads(fc)
 
                     self._file_contents[info.filename] = j
-
-                    if 'pages/' in info.filename:
-                        if len(j['layers']) > 0 and j['layers'][0]['_class'] == 'symbolMaster':
-                            self._symbol_file = info.filename
-                            # p(j)
-                            for s in j['layers']:
-                                if 'symbolID' not in s:
-                                    continue
-                                if s['name'] in self.symbol_mapping:
-                                    print('Duplicate symbol', s['name'], 'in', path)
-                                self.symbol_mapping[s['name']] = s['symbolID']
-
-                        self.file_mapping[j['name']] = info.filename
 
                 elif 'images/' in info.filename or '.png' in info.filename:
                     try:
@@ -158,6 +149,23 @@ class SketchFile:
             _fsizes[k] = len(v)
 
         return _contents
+
+    def get_available_symbols(self):
+        m = []
+        for p in self.sketch_pages:
+            for l in p.layers:
+                if l._class == 'symbolMaster':
+                    m.append(l)
+
+        return m
+
+    def search_symbols_by_name(self, name: str):
+        m = self.get_available_symbols()
+        search = []
+        for s in m:
+            if name in s.name:
+                search.append(s)
+        return search
 
     def add_page(self, name: str):
         pg = sketch_types.SketchPage()
@@ -285,17 +293,74 @@ def check_file(path):
 
 
 if __name__ == '__main__':
-    fe = SketchFile.create_empty()
+
+    #xed = SketchFile.from_file('/Users/niklas.fruehauf/Downloads/Mockup.template (1).sketch')
+    #sym  = xed.search_symbols_by_name('NEW Component')
+
+    #for s in sym:
+    #    print(s.name)
+
+    #exit()
+
+
+    fe = SketchFile.from_file('Icons.sketch')
+
+
+    symbol_hello = fe.search_symbols_by_name('HALLO')[0]
+    symbol_comp = fe.search_symbols_by_name('Comp')[0]
+    symbol_add = fe.search_symbols_by_name('Add')[0]
+
+    for s in [symbol_hello, symbol_comp, symbol_add]:
+        print(s.name, s.do_objectID, s.symbolID, s.originalObjectID)
+
+
+    target_page = fe.sketch_pages[1]
+
+
+    print()
+
+    for l in target_page.layers:
+        if len(l.overrideValues) > 0:
+            for ov in l.overrideValues:
+                print(l.name, ov.do_objectID, ov.overrideName, ov.value)
+            print(l.overrides)
+        else:
+            print(l.name)
+
+        print()
+
+
+    """for fname, fcont in fe._raw.items():
+        if b'9A1B890F-9034-4073-9848-B362CA7C4AF8' in fcont:
+            print(fname)
+            with open(fname.replace('/',''), 'wb') as f:
+                f.write(fcont)
+
+    exit()"""
+    # target_str = sketch_io.PyToSketch.write(target_page)
+
 
     if fe.has_page('Test2'):
         fe.remove_page('Test2')
 
+
+
+    #a = sketch_types.SJArtboardLayer.create('Artboard 123424525245',500,500)
+    #pg.add_artboard(a)
+
+    #rect = sketch_types.SJShapeRectangleLayer.create('Rect ABC', 10, 10, 100, 100)
+    #a.add_layer(rect)
+
     pg = fe.add_page('Test2')
 
-    a = sketch_types.SJArtboardLayer.create('Artboard 123424525245',200,200)
-    pg.add_artboard(a)
+    l = sketch_types.SJSymbolInstanceLayer.create(symbol_hello, 50, 50)
+    l.add_symbol_override(symbol_hello.get_layer_by_type('symbolInstance')[0].do_objectID, symbol_add)
+    l.add_text_override(symbol_hello.get_layer_by_type('text')[0].do_objectID, 'FUCKYEAH')
 
-    rect = sketch_types.SJShapeRectangleLayer.create('Rect ABC', 0, 0, 100, 100)
-    a.add_layer(rect)
+    pg.add_layer(l)
+
+    # source_str = sketch_io.PyToSketch.write(pg)
+
+    print()
 
     fe.save_to('created.sketch')
