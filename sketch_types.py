@@ -240,7 +240,6 @@ class SJFill:
         self.do_objectID: SJObjectId = None
 
 
-
 class SJGradientStop:
     def __init__(self):
         self._class: str = 'gradientStop'
@@ -283,6 +282,7 @@ class SJInnerShadow(SJShadow):
         super().__init__()
         self._class: str = 'innerShadow'
 
+
 SJBorderList = List[SJBorder]
 SJShadowList = List[SJShadow]
 SJInnerShadowList = List[SJInnerShadow]
@@ -314,10 +314,10 @@ class SJStyle:
         self._class: str = 'style'
         self.sharedObjectID: str = None
         self.borderOptions: SJBorderOptions = None
-        self.borders: SJBorderList = None
-        self.shadows: SJShadowList = None
-        self.innerShadows: SJInnerShadowList = None
-        self.fills: SJFillList = None
+        self.borders: SJBorderList = []
+        self.shadows: SJShadowList = []
+        self.innerShadows: SJInnerShadowList = []
+        self.fills: SJFillList = []
         self.textStyle: SJTextStyle = None
         self.miterLimit: int = 10
         self.startDecorationType: LineDecorationTypeEnum = LineDecorationTypeEnum._None
@@ -374,7 +374,7 @@ class SJSharedStyleContainer:
 class SJSharedSymbolContainer:
     def __init__(self):
         self._class: str = 'symbolContainer'
-        self.objects: List = [] # TODO not clear
+        self.objects: List = []  # TODO not clear
 
 
 class ExportOptions:
@@ -415,11 +415,21 @@ class SJImageDataReference:
 PointString = NewType('PointString', str)
 
 
+
 class SJCurvePoint:
+    @staticmethod
+    def create(x,y):
+        p = SJCurvePoint()
+        pstring = '{%d, %d}' % (x,y)
+        p.curveFrom = pstring
+        p.curveTo = pstring
+        p.point = pstring
+        return p
+
     def __init__(self):
         self._class: str = 'curvePoint'
         self.do_objectID: SJObjectId = None
-        self.cornerRadius: float = 1.0
+        self.cornerRadius: float = 0.0
         self.curveFrom: PointString = '{0, 0}'
         self.curveMode: CurveMode = CurveMode.Straight
         self.curveTo: PointString = '{0, 0}'
@@ -440,8 +450,8 @@ class _SJLayerBase(SJIDBase):
         self.isLocked: bool = False
         self.layerListExpandedType: LayerListExpandedType = LayerListExpandedType.Collapsed
         self.hasClickThrough: bool = None
-        self.layers: SJLayerList = None
-        self.style: SJStyle = None
+        self.layers: SJLayerList = []
+        self.style: SJStyle = SJStyle()
         self.isFlippedHorizontal: bool = False
         self.isFlippedVertical: bool = False
         self.rotation: int = 0
@@ -461,6 +471,10 @@ class _SJLayerBase(SJIDBase):
         self.resizesContent: bool = None
         self.isFlowHome: bool = None
         self.layout: SJLayoutGrid = None
+
+    def add_layer(self, r):
+        _link_to_parent(r,self)
+        self.layers.append(r)
 
 
 class _SJArtboardBase(_SJLayerBase):
@@ -554,6 +568,16 @@ class SJArtboardLayer(_SJArtboardBase):
         self._class: str = 'artboard'
         self.presetDictionary: SJPresetDict = None
 
+    @staticmethod
+    def create(name, w, h):
+        a = SJArtboardLayer()
+        a.do_objectID = get_object_id()
+        a.name = name
+        a.frame.width = w
+        a.frame.height = h
+
+        return a
+
 
 class SJTextLayer(_SJLayerBase):
     def __init__(self):
@@ -582,6 +606,28 @@ class SJShapeGroupLayer(_SJLayerBase):
         self.windingRule: int = 0  # TODO enum
         self.clippingMaskMode: MaskModeEnum = MaskModeEnum.Alpha
 
+    @staticmethod
+    def create(name, x, y, w, h):
+        r = SJShapeGroupLayer()
+        r.do_objectID = get_object_id()
+        r.name = name
+        r.isVisible = True
+        r.frame = SJRect()
+        r.frame.x = x
+        r.frame.y = y
+        r.frame.width = w
+        r.frame.height = h
+
+        b = SJBorder()
+        b.fillType = FillTypeEnum.Solid
+        b.isEnabled = True
+        b.position = BorderPositionEnum.Inside
+        b.thickness = 1
+        b.color = SJColorPalette.BLACK
+
+        r.style.borders.append(b)
+        return r
+
 
 class SJShapeLayer(_SJLayerBase):
     def __init__(self):
@@ -597,6 +643,37 @@ class SJShapeLayer(_SJLayerBase):
 
 
 class SJShapeRectangleLayer(SJShapeLayer):
+    @staticmethod
+    def create(name,x,y,w,h) -> SJShapeGroupLayer:
+
+        r = SJShapeGroupLayer.create(name,x,y,w,h)
+
+        l = SJShapeRectangleLayer()
+        l.do_objectID = get_object_id()
+        l.frame.x = x
+        l.frame.y = y
+        l.frame.width = w
+        l.frame.height = h
+        l.path = SJPath()
+        l.path.pointRadiusBehaviour = 1
+
+        p1 = SJCurvePoint.create(0,0)
+        l.path.points.append(p1)
+
+        p1 = SJCurvePoint.create(1, 0)
+        l.path.points.append(p1)
+
+        p1 = SJCurvePoint.create(1,1)
+        l.path.points.append(p1)
+
+        p1 = SJCurvePoint.create(0, 1)
+        l.path.points.append(p1)
+
+        l.points = l.path.points
+
+        r.layers.append(l)
+        return r
+
     def __init__(self):
         super().__init__()
         self._class: str = 'rectangle'
@@ -618,7 +695,6 @@ class SJShapePathLayer(SJShapeLayer):
 
 
 EncodedBase64BinaryPlist = NewType('EncodedBase64BinaryPlist', str)
-
 
 
 class SJPath:
@@ -778,10 +854,13 @@ class SketchPage(_SJLayerBase):
         x = self._parent.sketch_meta.pagesAndArtboards[self.do_objectID]
         m = SJArtboardDescription()
         m.name = artboard.name
-        _link_to_parent(m,artboard)
+        _link_to_parent(m, artboard)
         x.artboards[artboard.do_objectID] = m
-        print(x)
+        return artboard
 
+    def remove_artboard(self, artboard: SJArtboardLayer):
+        self.layers.remove(artboard)
+        del self._parent.sketch_meta.pagesAndArtboards[self.do_objectID].artboards[artboard.do_objectID]
 
 
 class SketchUserDataEntry:

@@ -14,8 +14,6 @@ class SketchToPy:
     type_map_ext = {}
     type_map = {}
 
-
-
     @classmethod
     def _get_type(cls, cls_name, field):
         if cls_name in cls.type_map_ext and field in cls.type_map_ext[cls_name]:
@@ -214,8 +212,9 @@ class SketchToPy:
             unknown_keys = available_keys.difference(optional_keys)
 
             if len(missing_keys) > 0:
-                print('Missing some properties required by type file, but not found in sketch file in %s [%s]: %s' % (
-                    p, x, missing_keys))
+                pass
+                #print('Missing some properties required by type file, but not found in sketch file in %s [%s]: %s' % (
+                #    p, x, missing_keys))
 
             if len(unknown_keys) > 0:
                 print('Found unknown props in sketch file in %s with type %s' % (p, x))
@@ -308,37 +307,40 @@ class SketchToPy:
         return self.js_to_py(sketch_types.SketchPage, page_contents, p=file)
 
 
+def del_none(d):
+    """
+    Delete keys with the value ``None`` in a dictionary, recursively.
+
+    This alters the input so you may wish to ``copy`` the dict first.
+    """
+    # For Python 3, write `list(d.items())`; `d.items()` won’t work
+    # For Python 2, write `d.items()`; `d.iteritems()` won’t work
+
+    if isinstance(d, dict):
+        for key, value in list(d.items()):
+            if key == '_parent':
+                del d[key]
+            elif value is None:
+                del d[key]
+            else:
+                del_none(d[key])
+
+    elif isinstance(d, list):
+        for i, v in enumerate(d):
+            del_none(v)
+    elif hasattr(d,'__dict__'):
+        d = d.__dict__
+        if '_parent' in d:
+            del d['_parent']
+        return del_none(d)
+
+    return d
+
+
 class AdvancedEncoder(JSONEncoder):
-    def del_none(self, d):
-        """
-        Delete keys with the value ``None`` in a dictionary, recursively.
-
-        This alters the input so you may wish to ``copy`` the dict first.
-        """
-        # For Python 3, write `list(d.items())`; `d.items()` won’t work
-        # For Python 2, write `d.items()`; `d.iteritems()` won’t work
-        if isinstance(d, dict):
-            for key, value in list(d.items()):
-                if key == '_parent':
-                    del d[key]
-                elif value is None:
-                    del d[key]
-                else:
-                    self.del_none(d[key])
-
-        elif isinstance(d, list):
-            for i, v in enumerate(d):
-                self.del_none(v)
-
-        return d
-
     def default(self, o):
         try:
             stype = str(type(o))
-
-            if type(o) is dict:
-                if '_parent' in o:
-                    del o['_parent']
 
             if 'mappingproxy' in stype:  # Enum
                 return None
@@ -346,15 +348,11 @@ class AdvancedEncoder(JSONEncoder):
             if 'enum' in stype:
                 return o.value
 
-            if not hasattr(o,'__dict__'):
-                return None
+            if hasattr(o,'__dict__'):
+                return o.__dict__
 
-            d = copy.copy(o.__dict__)
-            if '_parent' in d:
-                del d['_parent']
+            return o
 
-            d = self.del_none(d)
-            return d
         except Exception as e:
             print(e)
             print(str(o))
@@ -363,4 +361,6 @@ class AdvancedEncoder(JSONEncoder):
 class PyToSketch:
     @classmethod
     def write(cls, obj):
-        return json.dumps(obj, cls=AdvancedEncoder,check_circular=False)
+        obj = copy.deepcopy(obj)
+        obj = del_none(obj)
+        return json.dumps(obj, cls=AdvancedEncoder, check_circular=False)

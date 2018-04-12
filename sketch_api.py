@@ -23,8 +23,8 @@ class SketchFile:
         # s.sketch_document.do_objectID = sketch_types.get_object_id()
 
         ent = sketch_types.SketchUserDataEntry()
-        delattr(ent,'zoomValue')
-        delattr(ent,'scrollOrigin')
+        delattr(ent, 'zoomValue')
+        delattr(ent, 'scrollOrigin')
         ent.pageListHeight = 110
         s.sketch_user['16FC7444-C1AC-4FA3-9003-F6C778254BFF'] = ent
         return s
@@ -44,7 +44,7 @@ class SketchFile:
 
         if path is not None:
             f = zipfile.ZipFile(path, mode='r')
-            print(f.start_dir)
+            # print(f.start_dir)
             # print(f.compression)
             for info in f.infolist():
 
@@ -71,9 +71,7 @@ class SketchFile:
 
                 elif 'images/' in info.filename or '.png' in info.filename:
                     try:
-                        img: ImageFile = Image.open(BytesIO(fc))
-                        img = np.array(img)
-                        img.setflags(write=True)
+                        img = self.str_to_img(fc)
                         self.images[info.filename] = img
                         self._file_contents[info.filename] = img
                     except OSError as e:
@@ -87,18 +85,21 @@ class SketchFile:
 
             self._read_json_to_objects()
 
-        #_link_to_parent(self.sketch_meta, self)
-        #_link_to_parent(self.sketch_document, self)
-        #_link_to_parent(self.sketch_user, self)
-        #_link_to_parent(self.sketch_pages, self)
+        _link_to_parent(self.sketch_meta, self)
+        _link_to_parent(self.sketch_document, self)
+        _link_to_parent(self.sketch_user, self)
+        _link_to_parent(self.sketch_pages, self)
 
     def save_to(self, fn):
+
+        assert len(self.sketch_pages) > 0, 'At least one content page is required for sketch to correctly read the file.'
+
         c = zipfile.ZipFile(fn, mode='w', compression=8)
 
         _contents = self._convert_objects_to_json()
-        print('Saving dict with %d entries.' % len(_contents))
+        print('Saving dict with entries: %s' % _contents.keys())
         for fname, fcont in _contents.items():
-            c.writestr(fname, fcont,compress_type=8)
+            c.writestr(fname, fcont, compress_type=8)
 
         c.close()
 
@@ -122,13 +123,19 @@ class SketchFile:
     def get_objects_by_class(self, cls: str):
         return self._parser._class_maps[cls]
 
-    def _img_to_str(self, img):
+    def img_to_str(self, img: np.ndarray):
         bio = BytesIO()
-        img = Image.fromarray(img,mode='RGB')
+        img = Image.fromarray(img, mode='RGB')
         img.save(bio, format='png')
         val = bio.getvalue()
         bio.close()
         return val
+
+    def str_to_img(self, imgstr: bytes):
+        img: ImageFile = Image.open(BytesIO(imgstr))
+        img = np.array(img)
+        img.setflags(write=True)
+        return img
 
     def _convert_objects_to_json(self):
         _contents = {}
@@ -140,11 +147,11 @@ class SketchFile:
             _contents['pages/' + page.do_objectID + '.json'] = sketch_io.PyToSketch.write(page)
 
         for name, image in self.images.items():
-            _contents[name] = self._img_to_str(image)
+            _contents[name] = self.img_to_str(image)
 
         preview = np.zeros((200, 200, 3))
 
-        _contents['previews/preview.png'] = self._img_to_str(preview)
+        _contents['previews/preview.png'] = self.img_to_str(preview)
 
         _fsizes = {}
         for k, v in _contents.items():
@@ -174,6 +181,28 @@ class SketchFile:
 
         return pg
 
+    def remove_page(self, name: str):
+        page = self.get_page_by_name(name)
+        self.sketch_pages.remove(page)
+        pid = page.do_objectID
+
+        for i, ref in enumerate(self.sketch_document.pages):
+            if ref._ref == page.get_ref():
+                self.sketch_document.pages.pop(i)
+                break
+
+        del self.sketch_meta.pagesAndArtboards[pid]
+        del self.sketch_user[pid]
+
+    def get_page_by_name(self, name: str):
+        for p in self.sketch_pages:
+            if p.name == name:
+                return p
+        return None
+
+    def has_page(self, name: str):
+        return self.get_page_by_name(name) is not None
+
 
 def _link_to_parent(obj, parent=None):
     if type(obj) in [int, str, bool, float]:
@@ -191,20 +220,20 @@ def _link_to_parent(obj, parent=None):
             obj['_parent'] = parent
         return
 
-    if hasattr(obj,'__dict__'):
-        for k,v in obj.__dict__.items():
+    if hasattr(obj, '__dict__'):
+        for k, v in obj.__dict__.items():
             if '__' in k or '_parent' in k:
                 continue
             _link_to_parent(v, obj)
 
         if parent is not None:
-            setattr(obj,'_parent', parent)
+            setattr(obj, '_parent', parent)
 
 
 def compare_dict(source, target, path=''):
     if type(source) != dict:
         if source != target:
-            print('Base Mismatch at %s: %s vs %s' % (path,source,target))
+            print('Base Mismatch at %s: %s vs %s' % (path, source, target))
         return
 
     if type(source) != type(target):
@@ -239,61 +268,34 @@ def compare_dict(source, target, path=''):
             elif len(v) > len(t):
                 print('Source has more list elements in %s' % p)
             else:
-                for i, (ve,te) in enumerate(zip(v,t)):
-                    compare_dict(ve,te,p + '[%s]' % i)
+                for i, (ve, te) in enumerate(zip(v, t)):
+                    compare_dict(ve, te, p + '[%s]' % i)
         elif '.png' not in k:
             if v != t:
-                print('Property mismatch in %s: %s vs %s' % (p,v,t))
+                print('Property mismatch in %s: %s vs %s' % (p, v, t))
             if type(v) != type(t):
-                print('Type mismatch in %s: %s vs %s' % (p,v,t))
+                print('Type mismatch in %s: %s vs %s' % (p, v, t))
 
 
 def check_file(path):
     fe = SketchFile.from_file(path)
-
     _target_contents = fe._file_contents
-
     _contents = fe.save_to('xyz.sketch')
     compare_dict(_contents, _target_contents)
 
 
 if __name__ == '__main__':
-    #
-    """import glob
-
-    sk = glob.glob('*.sketch')
-
-    global_map = {}
-
-    for f in sk:
-        print(f)
-        file2 = SketchFile.from_file(f)
-
-        req = file2._parser._observed_fields_map
-        for k,v in req.items():
-            if k in global_map:
-                global_map[k] = v.intersection(global_map[k])
-            else:
-                global_map[k] = v
-
-    import pprint
-    pprint.pprint(global_map)"""
-
     fe = SketchFile.create_empty()
 
-    pg = fe.add_page('Test')
+    if fe.has_page('Test2'):
+        fe.remove_page('Test2')
 
-    a = sketch_types.SJArtboardLayer()
-    a.do_objectID = sketch_types.get_object_id()
-    a.name = 'Artboard 123424525245'
-    a.frame.width = 200
-    a.frame.height = 200
+    pg = fe.add_page('Test2')
 
+    a = sketch_types.SJArtboardLayer.create('Artboard 123424525245',200,200)
     pg.add_artboard(a)
 
+    rect = sketch_types.SJShapeRectangleLayer.create('Rect ABC', 0, 0, 100, 100)
+    a.add_layer(rect)
 
     fe.save_to('created.sketch')
-
-
-
-
