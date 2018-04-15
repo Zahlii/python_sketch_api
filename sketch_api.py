@@ -53,7 +53,6 @@ class SketchFile:
 
                 self._raw[info.filename] = fc
 
-
                 self._file_sizes[info.filename] = len(fc)
                 if info.filename.endswith(".json"):
                     j = json.loads(fc)
@@ -83,7 +82,8 @@ class SketchFile:
 
     def save_to(self, fn):
 
-        assert len(self.sketch_pages) > 0, 'At least one content page is required for sketch to correctly read the file.'
+        assert len(
+            self.sketch_pages) > 0, 'At least one content page is required for sketch to correctly read the file.'
 
         c = zipfile.ZipFile(fn, mode='w', compression=8)
 
@@ -294,73 +294,55 @@ def check_file(path):
 
 if __name__ == '__main__':
 
-    #xed = SketchFile.from_file('/Users/niklas.fruehauf/Downloads/Mockup.template (1).sketch')
-    #sym  = xed.search_symbols_by_name('NEW Component')
+    # xed = SketchFile.from_file('/Users/niklas.fruehauf/Downloads/Mockup.template (1).sketch')
+    # sym  = xed.search_symbols_by_name('NEW Component')
 
-    #for s in sym:
+    # for s in sym:
     #    print(s.name)
 
-    #exit()
+    # exit()
 
+    main_file = SketchFile.from_file('Icons.sketch')
 
-    fe = SketchFile.from_file('Icons.sketch')
-
-
-    symbol_hello = fe.search_symbols_by_name('HALLO')[0]
-    symbol_comp = fe.search_symbols_by_name('Comp')[0]
-    symbol_add = fe.search_symbols_by_name('Add')[0]
+    symbol_hello = main_file.search_symbols_by_name('HALLO')[0]
+    symbol_comp = main_file.search_symbols_by_name('Comp')[0]
+    symbol_add = main_file.search_symbols_by_name('Add')[0]
 
     for s in [symbol_hello, symbol_comp, symbol_add]:
         print(s.name, s.do_objectID, s.symbolID, s.originalObjectID)
 
+    target_page = main_file.sketch_pages[1]
 
-    target_page = fe.sketch_pages[1]
+    if main_file.has_page('Test2'):
+        main_file.remove_page('Test2')
 
+    test_page = main_file.add_page('Test2')
 
-    print()
+    test_artboard = sketch_types.SJArtboardLayer.create('Artboard 123424525245', 500, 500)
+    test_page.add_artboard(test_artboard)
 
-    for l in target_page.layers:
-        if len(l.overrideValues) > 0:
-            for ov in l.overrideValues:
-                print(l.name, ov.do_objectID, ov.overrideName, ov.value)
-            print(l.overrides)
-        else:
-            print(l.name)
-
-        print()
-
-
-    """for fname, fcont in fe._raw.items():
-        if b'9A1B890F-9034-4073-9848-B362CA7C4AF8' in fcont:
-            print(fname)
-            with open(fname.replace('/',''), 'wb') as f:
-                f.write(fcont)
-
-    exit()"""
-    # target_str = sketch_io.PyToSketch.write(target_page)
-
-
-    if fe.has_page('Test2'):
-        fe.remove_page('Test2')
-
-
-
-    #a = sketch_types.SJArtboardLayer.create('Artboard 123424525245',500,500)
-    #pg.add_artboard(a)
-
-    #rect = sketch_types.SJShapeRectangleLayer.create('Rect ABC', 10, 10, 100, 100)
-    #a.add_layer(rect)
-
-    pg = fe.add_page('Test2')
+    rect = sketch_types.SJShapeRectangleLayer.create('Rect ABC', 10, 10, 100, 100)
+    test_artboard.add_layer(rect)
 
     l = sketch_types.SJSymbolInstanceLayer.create(symbol_hello, 50, 50)
     l.add_symbol_override(symbol_hello.get_layer_by_type('symbolInstance')[0].do_objectID, symbol_add)
     l.add_text_override(symbol_hello.get_layer_by_type('text')[0].do_objectID, 'FUCKYEAH')
 
-    pg.add_layer(l)
+    l3 = sketch_types.SJSymbolInstanceLayer.create(symbol_hello, 80, 80)
+    l3.add_symbol_override(symbol_hello.get_layer_by_type('symbolInstance')[0].do_objectID, symbol_add)
+    l3.add_text_override(symbol_hello.get_layer_by_type('text')[0].do_objectID, 'FUCKYEAH2')
 
-    # source_str = sketch_io.PyToSketch.write(pg)
+    l_group = sketch_types.SJGroupLayer.create('Group Me', [l, l3])
+
+    test_artboard.add_layer(l_group)
+
+    pts = [sketch_types.Point(300, 200), sketch_types.Point(500,200), sketch_types.Point(50,23)]
+    l_path = sketch_types.SJShapePathLayer.create('Test Path', pts)
+
+    test_artboard.add_layer(l_path)
+
+    # source_str = sketch_io.PyToSketch.write(test_page)
 
     print()
 
-    fe.save_to('created.sketch')
+    main_file.save_to('created.sketch')

@@ -1,4 +1,5 @@
 import base64
+import math
 import secrets
 from enum import Enum
 from typing import NewType, Union, List, Dict
@@ -6,9 +7,6 @@ from typing import NewType, Union, List, Dict
 from biplist import readPlistFromString, writePlistToString
 
 from sketch_api import SketchFile, _link_to_parent
-
-
-
 
 SJObjectId = NewType('SJObjectId', str)
 
@@ -28,7 +26,7 @@ class SJIDBase:
         self.do_objectID: SJObjectId = None  # get_object_id()
 
 
-# Rect encoded as a string, ie {{0, 0}, {10, 30}}
+# Rect encoded as test_artboard string, ie {{0, 0}, {10, 30}}
 SJStringRect = NewType('SJStringRect', str)
 
 
@@ -41,6 +39,7 @@ class SJRect(SJIDBase):
         self.y: float = 0
         self.width: float = 300
         self.height: float = 300
+
 
 class SJColorNoClass(SJIDBase):
     def __init__(self, r=0.0, g=0.0, b=0.0, a=1.0):
@@ -420,12 +419,11 @@ class SJImageDataReference:
 PointString = NewType('PointString', str)
 
 
-
 class SJCurvePoint:
     @staticmethod
-    def create(x,y):
+    def create(x, y):
         p = SJCurvePoint()
-        pstring = '{%d, %d}' % (x,y)
+        pstring = '{%f, %f}' % (x, y)
         p.curveFrom = pstring
         p.curveTo = pstring
         p.point = pstring
@@ -478,7 +476,7 @@ class _SJLayerBase(SJIDBase):
         self.layout: SJLayoutGrid = None
 
     def add_layer(self, r):
-        _link_to_parent(r,self)
+        _link_to_parent(r, self)
         self.layers.append(r)
 
     def remove_layer(self, r):
@@ -542,7 +540,7 @@ class SJOverride:
 
 class SJSymbolInstanceLayer(_SJLayerBase):
     @staticmethod
-    def create(symbol: SJSymbolMaster, x,y):
+    def create(symbol: SJSymbolMaster, x, y):
         l = SJSymbolInstanceLayer()
         l.do_objectID = get_object_id()
         l.symbolID = symbol.symbolID
@@ -556,7 +554,6 @@ class SJSymbolInstanceLayer(_SJLayerBase):
     def add_symbol_override(self, target_symbol_id, new_symbol: SJSymbolMaster):
         ov = SJOverride()
         ov.do_objectID = get_object_id()
-
 
         ov.overrideName = target_symbol_id + '_symbolID'
 
@@ -575,7 +572,6 @@ class SJSymbolInstanceLayer(_SJLayerBase):
         self.overrideValues.append(ov)
 
         self.overrides[target_text_id] = new_text
-
 
     def __init__(self):
         super().__init__()
@@ -643,6 +639,47 @@ class SJGroupLayer(_SJLayerBase):
         super().__init__()
         self._class: str = 'group'
 
+    @staticmethod
+    def create(name: str, layer_list: List[_SJLayerBase]):
+        assert len(layer_list) >= 1, 'Group layers need at least one sub-layers'
+
+        main_group = SJGroupLayer()
+        main_group.name = name
+
+        min_x = math.inf
+        min_y = math.inf
+        max_x = -math.inf
+        max_y = -math.inf
+
+        for l in layer_list:
+            x = l.frame.x
+            y = l.frame.y
+
+            if x < min_x:
+                min_x = x
+            if y < min_y:
+                min_y = y
+
+            x += l.frame.width
+            y += l.frame.height
+
+            if x > max_x:
+                max_x = x
+            if y > max_y:
+                max_y = y
+
+        main_group.frame.x = min_x
+        main_group.frame.y = min_y
+        main_group.frame.width = max_x - min_x
+        main_group.frame.height = max_y - min_y
+
+        for l in layer_list:
+            l.frame.x -= min_x
+            l.frame.y -= min_y
+            main_group.layers.append(l)
+
+        return main_group
+
 
 class SJShapeGroupLayer(_SJLayerBase):
     def __init__(self):
@@ -691,26 +728,25 @@ class SJShapeLayer(_SJLayerBase):
 
 class SJShapeRectangleLayer(SJShapeLayer):
     @staticmethod
-    def create(name,x,y,w,h) -> SJShapeGroupLayer:
-
-        r = SJShapeGroupLayer.create(name,x,y,w,h)
+    def create(name, x, y, w, h) -> SJShapeGroupLayer:
+        r = SJShapeGroupLayer.create(name, x, y, w, h)
 
         l = SJShapeRectangleLayer()
         l.do_objectID = get_object_id()
-        l.frame.x = x
-        l.frame.y = y
+        l.frame.x = 0
+        l.frame.y = 0
         l.frame.width = w
         l.frame.height = h
         l.path = SJPath()
         l.path.pointRadiusBehaviour = 1
 
-        p1 = SJCurvePoint.create(0,0)
+        p1 = SJCurvePoint.create(0, 0)
         l.path.points.append(p1)
 
         p1 = SJCurvePoint.create(1, 0)
         l.path.points.append(p1)
 
-        p1 = SJCurvePoint.create(1,1)
+        p1 = SJCurvePoint.create(1, 1)
         l.path.points.append(p1)
 
         p1 = SJCurvePoint.create(0, 1)
@@ -734,11 +770,65 @@ class SJShapeOvalLayer(SJShapeLayer):
         self.path: SJPath = SJPath()
 
 
+class Point:
+    @staticmethod
+    def from_str(s: PointString):
+        x, y = s.replace('{', '').replace('}', '').split(',')
+        return float(x), float(y)
+
+    def __init__(self, x: float, y: float):
+        self.x: float = x
+        self.y: float = y
+
+    def to_str(self) -> PointString:
+        return PointString('{%f, %f}' % (self.x, self.y))
+
+
 class SJShapePathLayer(SJShapeLayer):
     def __init__(self):
         super().__init__()
         self._class: str = 'shapePath'
         self.path: SJPath = SJPath()
+
+    @staticmethod
+    def create(name: str, points: List[Point]):
+        min_x = math.inf
+        max_x = -math.inf
+        min_y = math.inf
+        max_y = -math.inf
+
+        for pt in points:
+            min_x = min(min_x, pt.x)
+            max_x = max(max_x, pt.x)
+            min_y = min(min_y, pt.y)
+            max_y = max(max_y, pt.y)
+
+        w = max_x - min_x
+        h = max_y - min_y
+
+        group_layer = SJShapeGroupLayer.create(name, min_x, min_y, w, h)
+
+        path_layer = SJShapePathLayer()
+        path_layer.name = name
+        path_layer.frame.x = 0
+        path_layer.frame.y = 0
+
+        path_layer.frame.width = w
+        path_layer.frame.height = h
+
+        path_layer.path = SJPath()
+
+        for pt in points:
+            x = (pt.x - min_x) / w
+            y = (pt.y - min_y) / h
+            curve_point = SJCurvePoint.create(x, y)
+            path_layer.path.points.append(curve_point)
+
+        path_layer.points = path_layer.path.points
+
+        group_layer.layers.append(path_layer)
+
+        return group_layer
 
 
 EncodedBase64BinaryPlist = NewType('EncodedBase64BinaryPlist', str)

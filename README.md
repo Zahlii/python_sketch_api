@@ -5,12 +5,58 @@ Allows reading binary "plists", and consequently allows you to query information
 Includes all relevant data, even metadata and saving information.
 
 
-**CURRENTLY ONLY SUPPORTS READING!**
-
-**Note that this is a work in progress. Enhanced top-level features will soon arrive, and so will writing. Reading the data was the difficult part!**
-
-
 # Examples
+
+## Writing
+
+    main_file = SketchFile.from_file('Icons.sketch')
+
+    symbol_hello = main_file.search_symbols_by_name('HALLO')[0]
+    symbol_comp = main_file.search_symbols_by_name('Comp')[0]
+    symbol_add = main_file.search_symbols_by_name('Add')[0]
+
+    for s in [symbol_hello, symbol_comp, symbol_add]:
+        print(s.name, s.do_objectID, s.symbolID, s.originalObjectID)
+
+    target_page = main_file.sketch_pages[1]
+
+    if main_file.has_page('Test2'):
+        main_file.remove_page('Test2')
+
+    test_page = main_file.add_page('Test2')
+
+    test_artboard = sketch_types.SJArtboardLayer.create('Artboard 123424525245', 500, 500)
+    test_page.add_artboard(test_artboard)
+
+    rect = sketch_types.SJShapeRectangleLayer.create('Rect ABC', 10, 10, 100, 100)
+    test_artboard.add_layer(rect)
+
+    l = sketch_types.SJSymbolInstanceLayer.create(symbol_hello, 50, 50)
+    l.add_symbol_override(symbol_hello.get_layer_by_type('symbolInstance')[0].do_objectID, symbol_add)
+    l.add_text_override(symbol_hello.get_layer_by_type('text')[0].do_objectID, 'FUCKYEAH')
+
+    l3 = sketch_types.SJSymbolInstanceLayer.create(symbol_hello, 80, 80)
+    l3.add_symbol_override(symbol_hello.get_layer_by_type('symbolInstance')[0].do_objectID, symbol_add)
+    l3.add_text_override(symbol_hello.get_layer_by_type('text')[0].do_objectID, 'FUCKYEAH2')
+
+    l_group = sketch_types.SJGroupLayer.create('Group Me', [l, l3])
+
+    test_artboard.add_layer(l_group)
+
+    pts = [sketch_types.Point(300, 200), sketch_types.Point(500,200), sketch_types.Point(50,23)]
+    l_path = sketch_types.SJShapePathLayer.create('Test Path', pts)
+
+    test_artboard.add_layer(l_path)
+
+    # source_str = sketch_io.PyToSketch.write(test_page)
+
+    print()
+
+    main_file.save_to('created.sketch')
+
+## Reading
+
+
     file = SketchFile.from_file('MyFile.sketch')
 
 
