@@ -6,7 +6,7 @@ from typing import NewType, Union, List, Dict
 
 from biplist import readPlistFromString, writePlistToString
 
-from .sketch_api import SketchFile, _link_to_parent
+from . import sketch_api
 
 SJObjectId = NewType('SJObjectId', str)
 
@@ -476,7 +476,7 @@ class _SJLayerBase(SJIDBase):
         self.layout: SJLayoutGrid = None
 
     def add_layer(self, r):
-        _link_to_parent(r, self)
+        sketch_api._link_to_parent(r, self)
         self.layers.append(r)
 
     def remove_layer(self, r):
@@ -715,7 +715,7 @@ class SJGroupLayer(_SJLayerBase):
             l.frame.y -= min_y
             main_group.layers.append(l)
 
-        _link_to_parent(main_group.layers, main_group)
+        sketch_api._link_to_parent(main_group.layers, main_group)
 
         return main_group
 
@@ -795,7 +795,7 @@ class SJShapeRectangleLayer(SJShapeLayer):
 
         r.layers.append(l)
 
-        _link_to_parent(r.layers, r)
+        sketch_api._link_to_parent(r.layers, r)
         return r
 
     def __init__(self):
@@ -859,17 +859,21 @@ class SJShapePathLayer(SJShapeLayer):
 
         path_layer.path = SJPath()
 
-        for pt in points:
+        l = len(points) - 1
+
+        for i, pt in enumerate(points):
             x = (pt.x - min_x) / w
             y = (pt.y - min_y) / h
             curve_point = SJCurvePoint.create(x, y)
+            curve_point.hasCurveFrom = i < l
+            curve_point.hasCurveTo = i > 0
             path_layer.path.points.append(curve_point)
 
         path_layer.points = path_layer.path.points
 
         group_layer.layers.append(path_layer)
 
-        _link_to_parent(group_layer.layers, group_layer)
+        sketch_api._link_to_parent(group_layer.layers, group_layer)
 
         return group_layer
 
@@ -1020,7 +1024,7 @@ class SketchDocument(SJIDBase):
     def __init__(self):
         super().__init__()
         # TODO document
-        self._parent: SketchFile = None
+        self._parent: sketch_api.SketchFile = None
 
         self._class: str = 'document'
         self.colorSpace: int = 0
@@ -1041,7 +1045,7 @@ class SketchPage(_SJLayerBase):
     def __init__(self):
         super().__init__()
         self._class: str = 'page'
-        self._parent: SketchFile = None
+        self._parent: sketch_api.SketchFile = None
 
     def get_ref(self):
         return 'pages/%s' % self.do_objectID
@@ -1051,7 +1055,7 @@ class SketchPage(_SJLayerBase):
         x = self._parent.sketch_meta.pagesAndArtboards[self.do_objectID]
         m = SJArtboardDescription()
         m.name = artboard.name
-        _link_to_parent(m, artboard)
+        sketch_api._link_to_parent(m, artboard)
         x.artboards[artboard.do_objectID] = m
         return artboard
 
@@ -1062,7 +1066,7 @@ class SketchPage(_SJLayerBase):
 
 class SketchUserDataEntry:
     def __init__(self):
-        self._parent: SketchFile = None
+        self._parent: sketch_api.SketchFile = None
         self.scrollOrigin: PointString = None
         self.zoomValue: float = None
         self.pageListHeight: int = None
@@ -1108,7 +1112,7 @@ StrList = List[str]
 class SketchMeta(SketchCreateMeta):
     def __init__(self):
         super().__init__()
-        self._parent: SketchFile = None
+        self._parent: sketch_api.SketchFile = None
         self.pagesAndArtboards: SJPageArtboardMapping = {}
         self.fonts: StrList = []
 

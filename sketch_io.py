@@ -81,6 +81,7 @@ class SketchToPy:
         if ttype in cls.type_map:
             return cls.type_map[ttype]
         else:
+            ttype = ttype.replace('python_sketch_api.', '')
             r = eval(ttype)
             cls.type_map[ttype] = r
             return r
