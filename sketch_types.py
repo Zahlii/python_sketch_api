@@ -6,7 +6,7 @@ from typing import NewType, Union, List, Dict
 
 from biplist import readPlistFromString, writePlistToString
 
-from sketch_api import SketchFile, _link_to_parent
+from .sketch_api import SketchFile, _link_to_parent
 
 SJObjectId = NewType('SJObjectId', str)
 

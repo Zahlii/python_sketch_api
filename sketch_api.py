@@ -7,8 +7,8 @@ from typing import List, Dict
 import numpy as np
 from PIL import Image, ImageFile
 
-import sketch_io
-import sketch_types
+from . import sketch_io
+from . import sketch_types
 
 
 class SketchFile:

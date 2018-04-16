@@ -3,10 +3,10 @@ import json
 from json import JSONEncoder
 from typing import Dict, Any, List
 
-import sketch_types
-from sketch_types import SJObjectId
+import os
+from . import sketch_types
 
-with open('sketch_types.py', 'r') as f:
+with open(os.path.join(os.path.abspath(os.path.dirname(__file__)),'sketch_types.py'), 'r') as f:
     lines = f.readlines()
 
 
@@ -66,7 +66,7 @@ class SketchToPy:
         return ttype
 
     def __init__(self):
-        self._object_maps: Dict[SJObjectId, Any] = {}
+        self._object_maps: Dict[sketch_types.SJObjectId, Any] = {}
         self._class_maps: Dict[str, List[Any]] = {}
 
         self._observed_fields_map: Dict[str, set] = {}
