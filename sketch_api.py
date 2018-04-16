@@ -42,6 +42,8 @@ class SketchFile:
 
         self.images: Dict[str, np.ndarray] = {}
 
+        self.preview = np.zeros((100, 100, 3)) + 255  # all white
+
         if path is not None:
             f = zipfile.ZipFile(path, mode='r')
             # print(f.start_dir)
@@ -62,8 +64,14 @@ class SketchFile:
                 elif 'images/' in info.filename or '.png' in info.filename:
                     try:
                         img = self.str_to_img(fc)
-                        self.images[info.filename] = img
+
+                        if 'preview' in info.filename:
+                            self.preview = img
+                        else:
+                            self.images[info.filename] = img
                         self._file_contents[info.filename] = img
+
+
                     except OSError as e:
                         print('Couldnt load image from file %s' % info.filename)
 
@@ -128,6 +136,12 @@ class SketchFile:
         img.setflags(write=True)
         return img
 
+    def set_preview(self, img: np.ndarray):
+        self.preview = img
+
+    def get_preview(self):
+        return self.preview
+
     def _convert_objects_to_json(self):
         _contents = {}
         _contents['meta.json'] = sketch_io.PyToSketch.write(self.sketch_meta)  # meta.json
@@ -140,9 +154,8 @@ class SketchFile:
         for name, image in self.images.items():
             _contents[name] = self.img_to_str(image)
 
-        preview = np.zeros((200, 200, 3))
 
-        _contents['previews/preview.png'] = self.img_to_str(preview)
+        _contents['previews/preview.png'] = self.img_to_str(self.preview)
 
         _fsizes = {}
         for k, v in _contents.items():
