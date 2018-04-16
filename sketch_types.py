@@ -476,7 +476,7 @@ class _SJLayerBase(SJIDBase):
         self.layout: SJLayoutGrid = None
 
     def add_layer(self, r):
-        sketch_api._link_to_parent(r, self)
+        # sketch_api._link_to_parent(r, self)
         self.layers.append(r)
 
     def remove_layer(self, r):
@@ -715,7 +715,7 @@ class SJGroupLayer(_SJLayerBase):
             l.frame.y -= min_y
             main_group.layers.append(l)
 
-        sketch_api._link_to_parent(main_group.layers, main_group)
+        # sketch_api._link_to_parent(main_group.layers, main_group)
 
         return main_group
 
@@ -795,7 +795,7 @@ class SJShapeRectangleLayer(SJShapeLayer):
 
         r.layers.append(l)
 
-        sketch_api._link_to_parent(r.layers, r)
+        # sketch_api._link_to_parent(r.layers, r)
         return r
 
     def __init__(self):
@@ -873,7 +873,7 @@ class SJShapePathLayer(SJShapeLayer):
 
         group_layer.layers.append(path_layer)
 
-        sketch_api._link_to_parent(group_layer.layers, group_layer)
+        # sketch_api._link_to_parent(group_layer.layers, group_layer)
 
         return group_layer
 
@@ -1055,7 +1055,7 @@ class SketchPage(_SJLayerBase):
         x = self._parent.sketch_meta.pagesAndArtboards[self.do_objectID]
         m = SJArtboardDescription()
         m.name = artboard.name
-        sketch_api._link_to_parent(m, artboard)
+        # sketch_api._link_to_parent(m, artboard)
         x.artboards[artboard.do_objectID] = m
         return artboard
 

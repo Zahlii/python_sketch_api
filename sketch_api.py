@@ -13,8 +13,8 @@ from . import sketch_types
 
 class SketchFile:
     @staticmethod
-    def from_file(path):
-        return SketchFile(path)
+    def from_file(path, load_images=False):
+        return SketchFile(path, load_images)
 
     @staticmethod
     def create_empty():
@@ -29,7 +29,7 @@ class SketchFile:
         s.sketch_user['16FC7444-C1AC-4FA3-9003-F6C778254BFF'] = ent
         return s
 
-    def __init__(self, path=None):
+    def __init__(self, path=None, load_images=False):
         self._file_contents = {}
         self._file_sizes = {}
 
@@ -62,6 +62,9 @@ class SketchFile:
                     self._file_contents[info.filename] = j
 
                 elif 'images/' in info.filename or '.png' in info.filename:
+                    if not load_images:
+                        continue
+
                     try:
                         img = self.str_to_img(fc)
 
@@ -149,7 +152,13 @@ class SketchFile:
         _contents['user.json'] = sketch_io.PyToSketch.write(self.sketch_user)  # user.json
 
         for page in self.sketch_pages:
-            _contents['pages/' + page.do_objectID + '.json'] = sketch_io.PyToSketch.write(page)
+            t = 'pages/' + page.do_objectID + '.json'
+
+            print(page.name)
+            if page.name.startswith('- '):
+                _contents[t] = self._raw[t]
+            else:
+                _contents[t] = sketch_io.PyToSketch.write(page)
 
         for name, image in self.images.items():
             _contents[name] = self.img_to_str(image)
@@ -184,7 +193,6 @@ class SketchFile:
         pg = sketch_types.SketchPage()
         pg.do_objectID = sketch_types.get_object_id()
         pg.name = name
-        _link_to_parent(pg, self)
 
         self.sketch_pages.append(pg)
         ref = sketch_types.MSJSONFileReference()
@@ -194,7 +202,7 @@ class SketchFile:
         self.sketch_user[pg.do_objectID] = sketch_types.SketchUserDataEntry()
 
         mapping = sketch_types.SJPageArtboardMappingEntry()
-        _link_to_parent(mapping, self)
+
         mapping.artboards = {}
         mapping.name = name
 
@@ -226,7 +234,7 @@ class SketchFile:
 
 
 def _link_to_parent(obj, parent=None):
-    if type(obj) in [int, str, bool, float]:
+    """if type(obj) in [int, str, bool, float]:
         return
     if issubclass(obj.__class__, Enum):
         return
@@ -246,9 +254,9 @@ def _link_to_parent(obj, parent=None):
             if '__' in k or '_parent' in k:
                 continue
             _link_to_parent(v, obj)
-
-        if parent is not None:
-            setattr(obj, '_parent', parent)
+"""
+    if parent is not None and hasattr(obj,'__dict__'):
+        setattr(obj, '_parent', parent)
 
 
 def compare_dict(source, target, path=''):

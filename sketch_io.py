@@ -81,7 +81,6 @@ class SketchToPy:
         if ttype in cls.type_map:
             return cls.type_map[ttype]
         else:
-            ttype = ttype.replace('python_sketch_api.', '')
             r = eval(ttype)
             cls.type_map[ttype] = r
             return r
@@ -89,9 +88,12 @@ class SketchToPy:
     @classmethod
     def str_to_type(cls, ttype):
         ttype = ttype.strip()
+        ttype = ttype.replace('python_sketch_api.', '')
+        ftype = 'sketch_types.' + ttype if 'sketch_types.' not in ttype else ttype
+
         if ttype in ['str', 'list', 'dict', 'float', 'int', 'bool']:
             return cls._eval(ttype)
-        ftype = 'sketch_types.' + ttype if 'sketch_types.' not in ttype else ttype
+
         return cls._eval(ftype)
 
     def js_to_py_dict(self, ft, js, d, p):
@@ -218,6 +220,7 @@ class SketchToPy:
                 #    p, x, missing_keys))
 
             if len(unknown_keys) > 0:
+                return
                 print('Found unknown props in sketch file in %s with type %s' % (p, x))
                 for uk in unknown_keys:
                     jsuk = js[uk]
@@ -329,14 +332,8 @@ def del_none(d):
     elif isinstance(d, list):
         for i, v in enumerate(d):
             del_none(v)
-    elif hasattr(d,'__dict__'):
-        d = d.__dict__
-        if '_parent' in d:
-            del d['_parent']
-        return del_none(d)
 
     return d
-
 
 class AdvancedEncoder(JSONEncoder):
     def default(self, o):
@@ -350,7 +347,17 @@ class AdvancedEncoder(JSONEncoder):
                 return o.value
 
             if hasattr(o,'__dict__'):
-                return o.__dict__
+                d = o.__dict__
+                if '_raw' in d:
+                    del d['_raw']
+                if '_parent' in d:
+                    del d['_parent']
+
+                for k,v in list(d.items()):
+                    if v is None:
+                        del d[k]
+
+                return d
 
             if issubclass(type(o), str):
                 return str(o)
@@ -368,6 +375,17 @@ class AdvancedEncoder(JSONEncoder):
 class PyToSketch:
     @classmethod
     def write(cls, obj):
-        obj = copy.deepcopy(obj)
-        obj = del_none(obj)
-        return json.dumps(obj, cls=AdvancedEncoder, check_circular=False)
+        cp = None
+
+        if hasattr(obj, '_parent'):
+            cp = obj._parent
+            del obj._parent
+
+        d = json.dumps(obj, cls=AdvancedEncoder, check_circular=False)
+
+        print(len(d))
+
+        if cp is not None:
+            obj._parent = cp
+
+        return d
