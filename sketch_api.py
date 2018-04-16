@@ -304,12 +304,20 @@ if __name__ == '__main__':
 
     main_file = SketchFile.from_file('Icons.sketch')
 
+    text_layers: List[sketch_types.SJTextLayer] = main_file.get_objects_by_class('text')
+
+    for t in text_layers:
+        txt = t.get_text()
+        print(txt, t.get_font_family())
+        if 'sij' in txt:
+            break
+
     symbol_hello = main_file.search_symbols_by_name('HALLO')[0]
     symbol_comp = main_file.search_symbols_by_name('Comp')[0]
     symbol_add = main_file.search_symbols_by_name('Add')[0]
 
-    for s in [symbol_hello, symbol_comp, symbol_add]:
-        print(s.name, s.do_objectID, s.symbolID, s.originalObjectID)
+    # for s in [symbol_hello, symbol_comp, symbol_add]:
+    #   print(s.name, s.do_objectID, s.symbolID, s.originalObjectID)
 
     target_page = main_file.sketch_pages[1]
 
@@ -336,10 +344,14 @@ if __name__ == '__main__':
 
     test_artboard.add_layer(l_group)
 
-    pts = [sketch_types.Point(300, 200), sketch_types.Point(500,200), sketch_types.Point(50,23)]
+    pts = [sketch_types.Point(300, 200), sketch_types.Point(500, 200), sketch_types.Point(50, 23)]
     l_path = sketch_types.SJShapePathLayer.create('Test Path', pts)
 
     test_artboard.add_layer(l_path)
+
+    l_text = sketch_types.SJTextLayer.create('Sample Text', 20,350, text='Hello World', font_family='sovantaDTBETA-Regular', font_size=52)
+
+    test_artboard.add_layer(l_text)
 
     # source_str = sketch_io.PyToSketch.write(test_page)
 

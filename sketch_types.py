@@ -633,6 +633,43 @@ class SJTextLayer(_SJLayerBase):
         self.automaticallyDrawOnUnderlyingPath: bool = False
         self.textBehaviour: int = 0
 
+    @staticmethod
+    def create(name: str, x,y,text: str = '', font_family: str = None, font_size: float = None):
+        l_text = SJTextLayer()
+        l_text.name = name
+        l_text.do_objectID = get_object_id()
+        l_text.lineSpacingBehaviour = 2
+        l_text.frame.width = 120
+        l_text.frame.height = 20
+        l_text.frame.x = x
+        l_text.frame.y = y
+        l_text.set_text(text)
+
+        l_text.glyphBounds = '{{0, 0}, {120, 20}}'
+
+        if font_family is not None:
+            l_text.set_font_family(font_family)
+
+        if font_size is not None:
+            l_text.set_font_size(font_size)
+
+        return l_text
+
+    def set_font_size(self, size: float):
+        self.attributedString.set_font_size(size)
+
+    def set_font_family(self, family: str):
+        self.attributedString.set_font_family(family)
+
+    def get_text(self):
+        return self.attributedString.get_text()
+
+    def set_text(self, text: str):
+        self.attributedString.set_text(text)
+
+    def get_font_family(self):
+        return self.attributedString.get_font_family()
+
 
 class SJGroupLayer(_SJLayerBase):
     def __init__(self):
@@ -677,6 +714,8 @@ class SJGroupLayer(_SJLayerBase):
             l.frame.x -= min_x
             l.frame.y -= min_y
             main_group.layers.append(l)
+
+        _link_to_parent(main_group.layers, main_group)
 
         return main_group
 
@@ -755,6 +794,8 @@ class SJShapeRectangleLayer(SJShapeLayer):
         l.points = l.path.points
 
         r.layers.append(l)
+
+        _link_to_parent(r.layers, r)
         return r
 
     def __init__(self):
@@ -828,6 +869,8 @@ class SJShapePathLayer(SJShapeLayer):
 
         group_layer.layers.append(path_layer)
 
+        _link_to_parent(group_layer.layers, group_layer)
+
         return group_layer
 
 
@@ -843,8 +886,25 @@ class SJPath:
 
 
 class KeyValueArchive:
+
     def __init__(self):
-        self._archive: EncodedBase64BinaryPlist = EncodedBase64BinaryPlist('')
+        sample = 'YnBsaXN0MDDUAQIDBAUGaWpYJHZlcnNpb25YJG9iamVjdHNZJGFyY2hpdmVyVCR0b3ASAAGGoK8QIAcIDxAeHyAhIiotMzY6QkN' \
+                 'ERUZKTlpbXF1eX2BhYmRlVSRudWxs0wkKCwwNDlhOU1N0cmluZ1YkY2xhc3NcTlNBdHRyaWJ1dGVzgAKAH4ADXmphaGJsYmhkYm' \
+                 'hkc2lq0xESChMYHVdOUy5rZXlzWk5TLm9iamVjdHOkFBUWF4AEgAWABoAHpBkaGxyACIAMgBSAHoAdXxAQTlNQYXJhZ3JhcGhTd' \
+                 'HlsZV8QH01TQXR0cmlidXRlZFN0cmluZ0ZvbnRBdHRyaWJ1dGVfECpNU0F0dHJpYnV0ZWRTdHJpbmdDb2xvckRpY3Rpb25hcnlB' \
+                 'dHRyaWJ1dGVWTlNLZXJu1CMKJCUmJygoWk5TVGFiU3RvcHNcTlNUZXh0QmxvY2tzW05TVGV4dExpc3RzgACAC4AJgAnSEgorLKC' \
+                 'ACtIuLzAxWiRjbGFzc25hbWVYJGNsYXNzZXNXTlNBcnJheaIwMlhOU09iamVjdNIuLzQ1XxAQTlNQYXJhZ3JhcGhTdHlsZaI0Mt' \
+                 'IKNzg5XxAaTlNGb250RGVzY3JpcHRvckF0dHJpYnV0ZXOAE4AN0xESCjs+QaI8PYAOgA+iP0CAEIARgBJfEBNOU0ZvbnRTaXplQ' \
+                 'XR0cmlidXRlXxATTlNGb250TmFtZUF0dHJpYnV0ZSNAMAAAAAAAAF8QEE9wZW5TYW5zLVJlZ3VsYXLSLi9HSF8QE05TTXV0YWJs' \
+                 'ZURpY3Rpb25hcnmjR0kyXE5TRGljdGlvbmFyedIuL0tMXxAQTlNGb250RGVzY3JpcHRvcqJNMl8QEE5TRm9udERlc2NyaXB0b3L' \
+                 'TERIKT1QdpFBRUlOAFYAWgBeAGKRVVldYgBmAGoAbgByAHVNyZWRVYWxwaGFUYmx1ZVVncmVlbiM/0BAQEBvrlCM/8AAAAAAAAC' \
+                 'M/1NTU1NrClyM/0tLS0t4kXNIuL0ljokkyEADSLi9mZ18QEk5TQXR0cmlidXRlZFN0cmluZ6JoMl8QEk5TQXR0cmlidXRlZFN0c' \
+                 'mluZ18QD05TS2V5ZWRBcmNoaXZlctFrbFRyb290gAEACAARABoAIwAtADIANwBaAGAAZwBwAHcAhACGAIgAigCZAKAAqACzALgA' \
+                 'ugC8AL4AwADFAMcAyQDLAM0AzwDiAQQBMQE4AUEBTAFZAWUBZwFpAWsBbQFyAXMBdQF6AYUBjgGWAZkBogGnAboBvQHCAd8B4QH' \
+                 'jAeoB7QHvAfEB9AH2AfgB+gIQAiYCLwJCAkcCXQJhAm4CcwKGAokCnAKjAqgCqgKsAq4CsAK1ArcCuQK7Ar0CvwLDAskCzgLUAt' \
+                 '0C5gLvAvgC/QMAAwIDBwMcAx8DNANGA0kDTgAAAAAAAAIBAAAAAAAAAG0AAAAAAAAAAAAAAAAAAANQ'
+
+        self._archive: EncodedBase64BinaryPlist = EncodedBase64BinaryPlist(sample)
         self._raw: {} = None  # cached copy of dict
 
     def get_archive(self):

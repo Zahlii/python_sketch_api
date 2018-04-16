@@ -351,6 +351,12 @@ class AdvancedEncoder(JSONEncoder):
             if hasattr(o,'__dict__'):
                 return o.__dict__
 
+            if issubclass(type(o), str):
+                return str(o)
+
+            if issubclass(type(o), bytes):
+                return o.decode('utf-8')
+
             return o
 
         except Exception as e:
