@@ -922,10 +922,10 @@ class KeyValueArchive:
                  '0C5gLvAvgC/QMAAwIDBwMcAx8DNANGA0kDTgAAAAAAAAIBAAAAAAAAAG0AAAAAAAAAAAAAAAAAAANQ'
 
         self._archive: EncodedBase64BinaryPlist = EncodedBase64BinaryPlist(sample)
-        self._raw: {} = None  # cached copy of dict
+        self._raw: dict = None  # cached copy of dict
 
     def get_archive(self):
-        if self._raw is not None:
+        if hasattr(self,'_raw') and self._raw is not None:
             return self._raw
 
         bstr = base64.b64decode(self._archive)
