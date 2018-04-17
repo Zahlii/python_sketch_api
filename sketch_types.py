@@ -509,6 +509,19 @@ class SJSymbolMaster(_SJArtboardBase):
         self.changeIdentifier: int = 0
         self.grid: SJSimpleGrid = None
 
+    def find_text_layer_by_text(self, param):
+
+        def search(layers):
+            for l in layers:
+                if l._class == 'text' and param in l.get_text():
+                    return l
+                if len(l.layers) > 0:
+                    res = search(l.layers)
+                    if res:
+                        return res
+
+        return search(self.layers)
+
 
 SJSymbolInstanceLayer_overrides = Dict[SJObjectId, Union[str, SJImageDataReference, dict]]
 

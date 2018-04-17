@@ -383,7 +383,7 @@ class PyToSketch:
 
         d = json.dumps(obj, cls=AdvancedEncoder, check_circular=False)
 
-        print(len(d))
+        # print(len(d))
 
         if cp is not None:
             obj._parent = cp

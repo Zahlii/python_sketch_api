@@ -154,7 +154,7 @@ class SketchFile:
         for page in self.sketch_pages:
             t = 'pages/' + page.do_objectID + '.json'
 
-            print(page.name)
+            # print(page.name)
             if page.name.startswith('- '):
                 _contents[t] = self._raw[t]
             else:
@@ -172,7 +172,7 @@ class SketchFile:
 
         return _contents
 
-    def get_available_symbols(self):
+    def get_available_symbols(self) -> List[sketch_types.SJSymbolMaster]:
         m = []
         for p in self.sketch_pages:
             for l in p.layers:
@@ -181,7 +181,7 @@ class SketchFile:
 
         return m
 
-    def search_symbols_by_name(self, name: str):
+    def search_symbols_by_name(self, name: str) -> List[sketch_types.SJSymbolMaster]:
         m = self.get_available_symbols()
         search = []
         for s in m:
