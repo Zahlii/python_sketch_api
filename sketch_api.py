@@ -174,12 +174,23 @@ class SketchFile:
 
     def get_available_symbols(self) -> List[sketch_types.SJSymbolMaster]:
         m = []
-        for p in self.sketch_pages:
-            for l in p.layers:
+
+        def search_layers(layers):
+            for l in layers:
                 if l._class == 'symbolMaster':
                     m.append(l)
+                search_layers(l.layers)
+
+        for p in self.sketch_pages:
+            search_layers(p.layers)
 
         return m
+
+    def get_symbol_by_id(self, idx):
+        m = self.get_available_symbols()
+        for s in m:
+            if s.do_objectID == idx or s.symbolID == idx:
+                return s
 
     def search_symbols_by_name(self, name: str) -> List[sketch_types.SJSymbolMaster]:
         m = self.get_available_symbols()

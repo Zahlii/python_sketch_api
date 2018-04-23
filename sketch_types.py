@@ -509,12 +509,18 @@ class SJSymbolMaster(_SJArtboardBase):
         self.changeIdentifier: int = 0
         self.grid: SJSimpleGrid = None
 
-    def find_text_layer_by_text(self, param):
+    def find_text_layer_by_text(self, param, file):
 
         def search(layers):
             for l in layers:
                 if l._class == 'text' and param in l.get_text():
                     return l
+                if l._class == 'symbolInstance':
+                    sid = l.symbolID
+                    new_reference = file.get_symbol_by_id(sid)
+                    res = search(new_reference.layers)
+                    if res:
+                        return res
                 if len(l.layers) > 0:
                     res = search(l.layers)
                     if res:
