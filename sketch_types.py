@@ -510,6 +510,7 @@ class SJSymbolMaster(_SJArtboardBase):
         self.grid: SJSimpleGrid = None
 
     def find_text_layer_by_text(self, param, file):
+        path = []
 
         def search(layers):
             for l in layers:
@@ -520,13 +521,16 @@ class SJSymbolMaster(_SJArtboardBase):
                     new_reference = file.get_symbol_by_id(sid)
                     res = search(new_reference.layers)
                     if res:
+                        path.append(l)
                         return res
                 if len(l.layers) > 0:
                     res = search(l.layers)
                     if res:
                         return res
 
-        return search(self.layers)
+        res = search(self.layers)
+        path.append(res)
+        return path
 
 
 SJSymbolInstanceLayer_overrides = Dict[SJObjectId, Union[str, SJImageDataReference, dict]]
@@ -583,14 +587,30 @@ class SJSymbolInstanceLayer(_SJLayerBase):
             'symbolID': new_symbol.symbolID
         }
 
-    def add_text_override(self, target_text_id, new_text: str):
+    def add_text_override(self, target_text_ids: List[_SJLayerBase], new_text: str):
         ov = SJOverride()
         ov.do_objectID = get_object_id()
-        ov.overrideName = target_text_id + '_stringValue'
+
+        key = '/'.join([t.do_objectID for t in target_text_ids]) + '_stringValue'
+
+        ov.overrideName = key
         ov.value = new_text
         self.overrideValues.append(ov)
 
-        self.overrides[target_text_id] = new_text
+        def get_dict(ids):
+            if len(ids) == 1:
+                return {ids[0].do_objectID: new_text}
+
+            ret = {}
+            i = ids.pop(0)
+            ret[i] = get_dict(ids)
+            return ret
+
+        if len(target_text_ids) == 1:
+            self.overrides[target_text_ids[0].do_objectID] = new_text
+        else:
+            main_id = target_text_ids.pop(0).do_objectID
+            self.overrides[main_id] = get_dict(target_text_ids)
 
     def __init__(self):
         super().__init__()
