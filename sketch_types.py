@@ -532,6 +532,25 @@ class SJSymbolMaster(_SJArtboardBase):
         path.append(res)
         return path
 
+    def find_all_text_layers(self, file):
+        p = []
+
+        def search(layers, path):
+            opath = path.copy()
+            for l in layers:
+                path = opath.copy()
+                path.append(l)
+                if l._class == 'text':
+                    yield path
+                if l._class == 'symbolInstance':
+                    sid = l.symbolID
+                    new_reference = file.get_symbol_by_id(sid)
+                    yield from search(new_reference.layers, path)
+                if len(l.layers) > 0:
+                    yield from search(l.layers, path)
+
+        yield from search(self.layers, p)
+
 
 SJSymbolInstanceLayer_overrides = Dict[SJObjectId, Union[str, SJImageDataReference, dict]]
 
@@ -591,6 +610,8 @@ class SJSymbolInstanceLayer(_SJLayerBase):
         ov = SJOverride()
         ov.do_objectID = get_object_id()
 
+        target_text_ids = [t for t in target_text_ids if t._class in ['symbolInstance', 'text']]
+
         key = '/'.join([t.do_objectID for t in target_text_ids]) + '_stringValue'
 
         ov.overrideName = key
@@ -602,15 +623,17 @@ class SJSymbolInstanceLayer(_SJLayerBase):
                 return {ids[0].do_objectID: new_text}
 
             ret = {}
+
             i = ids.pop(0)
-            ret[i] = get_dict(ids)
+            ret[i.do_objectID] = get_dict(ids)
             return ret
 
         if len(target_text_ids) == 1:
             self.overrides[target_text_ids[0].do_objectID] = new_text
         else:
             main_id = target_text_ids.pop(0).do_objectID
-            self.overrides[main_id] = get_dict(target_text_ids)
+            d = get_dict(target_text_ids)
+            self.overrides[main_id] = d
 
     def __init__(self):
         super().__init__()

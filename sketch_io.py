@@ -272,6 +272,12 @@ class SketchToPy:
         t1 = type(obj1)
         t2 = type(obj2)
 
+        if obj1 == obj2:
+            return True
+
+        if t1 == t2 and ft is None:
+            return True
+
         if t1 == float and t2 == int or t2 == float and t1 == int:
             return True
 
