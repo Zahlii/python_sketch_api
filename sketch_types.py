@@ -697,6 +697,9 @@ class SJTextLayer(_SJLayerBase):
     def set_font_size(self, size: float):
         self.attributedString.set_font_size(size)
 
+    def get_font_size(self):
+        return self.attributedString.get_font_size()
+
     def set_font_family(self, family: str):
         self.attributedString.set_font_family(family)
 
