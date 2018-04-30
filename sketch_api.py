@@ -364,15 +364,15 @@ if __name__ == '__main__':
     rect = sketch_types.SJShapeRectangleLayer.create('Rect ABC', 10, 10, 100, 100)
     test_artboard.add_layer(rect)
 
-    l = sketch_types.SJSymbolInstanceLayer.create(symbol_hello, 50, 50)
-    l.add_symbol_override(symbol_hello.get_layer_by_type('symbolInstance')[0].do_objectID, symbol_add)
-    l.add_text_override(symbol_hello.get_layer_by_type('text')[0].do_objectID, 'FUCKYEAH')
+    n_imgs = sketch_types.SJSymbolInstanceLayer.create(symbol_hello, 50, 50)
+    n_imgs.add_symbol_override(symbol_hello.get_layer_by_type('symbolInstance')[0].do_objectID, symbol_add)
+    n_imgs.add_text_override(symbol_hello.get_layer_by_type('text')[0].do_objectID, 'FUCKYEAH')
 
     l3 = sketch_types.SJSymbolInstanceLayer.create(symbol_hello, 80, 80)
     l3.add_symbol_override(symbol_hello.get_layer_by_type('symbolInstance')[0].do_objectID, symbol_add)
     l3.add_text_override(symbol_hello.get_layer_by_type('text')[0].do_objectID, 'FUCKYEAH2')
 
-    l_group = sketch_types.SJGroupLayer.create('Group Me', [l, l3])
+    l_group = sketch_types.SJGroupLayer.create('Group Me', [n_imgs, l3])
 
     test_artboard.add_layer(l_group)
 
