@@ -710,13 +710,13 @@ class SJTextLayer(_SJLayerBase):
         self.textBehaviour: int = 0
 
     @staticmethod
-    def create(name: str, x, y, text: str = '', font_family: str = None, font_size: float = None):
+    def create(name: str, x, y, width, height, text: str = '', font_family: str = None, font_size: float = None):
         l_text = SJTextLayer()
         l_text.name = name
         l_text.do_objectID = get_object_id()
         l_text.lineSpacingBehaviour = 2
-        l_text.frame.width = 120
-        l_text.frame.height = 20
+        l_text.frame.width = width
+        l_text.frame.height = height
         l_text.frame.x = x
         l_text.frame.y = y
         l_text.set_text(text)
