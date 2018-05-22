@@ -1,10 +1,10 @@
-import base64
 import math
+
+import base64
 import secrets
+from biplist import readPlistFromString, writePlistToString
 from enum import Enum
 from typing import NewType, Union, List, Dict
-
-from biplist import readPlistFromString, writePlistToString
 
 from . import sketch_api
 
@@ -218,8 +218,9 @@ class SJBorder:
 FloatList = List[float]
 
 
-class SJBorderOptions:
+class SJBorderOptions(SJIDBase):
     def __init__(self):
+        super().__init__()
         self._class: str = 'borderOptions'
         self.isEnabled: bool = True
         self.dashPattern: FloatList = []
@@ -260,8 +261,9 @@ class SJGradient:
         self.stops: List[SJGradientStop] = []
 
 
-class SJContextSettings:
+class SJContextSettings(SJIDBase):
     def __init__(self):
+        super().__init__()
         self._class: str = 'graphicsContextSettings'
         self.blendMode: BlendModeEnum = BlendModeEnum.Color
         self.opacity: float = 1.0
@@ -291,8 +293,9 @@ SJInnerShadowList = List[SJInnerShadow]
 SJFillList = List[SJFill]
 
 
-class SJBlur:
+class SJBlur(SJIDBase):
     def __init__(self):
+        super().__init__()
         self._class: str = 'blur'
         self.isEnabled: bool = True
         self.center: PointString = '{0, 0}'
@@ -301,8 +304,9 @@ class SJBlur:
         self.type: BlurTypeEnum = BlurTypeEnum.GaussianBlur
 
 
-class SJColorControls:
+class SJColorControls(SJIDBase):
     def __init__(self):
+        super().__init__()
         self._class: str = 'colorControls'
         self.isEnabled: bool = True
         self.brightness: int = 0
@@ -316,10 +320,10 @@ class SJStyle:
         self._class: str = 'style'
         self.sharedObjectID: str = None
         self.borderOptions: SJBorderOptions = None
-        self.borders: SJBorderList = []
-        self.shadows: SJShadowList = []
-        self.innerShadows: SJInnerShadowList = []
-        self.fills: SJFillList = []
+        self.borders: SJBorderList = None
+        self.shadows: SJShadowList = None
+        self.innerShadows: SJInnerShadowList = None
+        self.fills: SJFillList = None
         self.textStyle: SJTextStyle = None
         self.miterLimit: int = 10
         self.startDecorationType: LineDecorationTypeEnum = LineDecorationTypeEnum._None
@@ -332,18 +336,19 @@ class SJStyle:
 
 class SJTextStyleAttribute:
     def __init__(self):
-        self.MSAttributedStringFontAttribute: KeyValueArchive = KeyValueArchive()
+        self.MSAttributedStringFontAttribute: SJFontDescriptor = None
         self.kerning: int = None
         self.MSAttributedStringColorAttribute: SJColor = None
-        self.paragraphStyle: KeyValueArchive = KeyValueArchive()
+        self.paragraphStyle: SJParagraphStyle = None
         self.MSAttributedStringColorDictionaryAttribute: SJColorNoClass = None
         self.MSAttributedStringTextTransformAttribute: int = None
         self.strikethroughStyle: int = None
         self.underlineStyle: int = None
 
 
-class SJTextStyle:
+class SJTextStyle(SJIDBase):
     def __init__(self):
+        super().__init__()
         self._class: str = 'textStyle'
         self.verticalAlignment: TextAlignmentEnum = 0  # TODO enum?
         self.encodedAttributes: SJTextStyleAttribute = SJTextStyleAttribute()
@@ -453,8 +458,8 @@ class _SJLayerBase(SJIDBase):
         self.isLocked: bool = False
         self.layerListExpandedType: LayerListExpandedType = LayerListExpandedType.Collapsed
         self.hasClickThrough: bool = None
-        self.layers: SJLayerList = []
-        self.style: SJStyle = SJStyle()
+        self.layers: SJLayerList = None
+        self.style: SJStyle = None
         self.isFlippedHorizontal: bool = False
         self.isFlippedVertical: bool = False
         self.rotation: int = 0
@@ -492,8 +497,9 @@ class _SJArtboardBase(_SJLayerBase):
         self.frame: SJRect = SJRect()
 
 
-class SJSimpleGrid:
+class SJSimpleGrid(SJIDBase):
     def __init__(self):
+        super().__init__()
         self._class: str = 'simpleGrid'
         self.isEnabled: bool = True
         self.gridSize: int = 0
@@ -555,8 +561,9 @@ class SJSymbolMaster(_SJArtboardBase):
 SJSymbolInstanceLayer_overrides = Dict[SJObjectId, Union[str, SJImageDataReference, dict]]
 
 
-class SJLayoutGrid:
+class SJLayoutGrid(SJIDBase):
     def __init__(self):
+        super().__init__()
         self._class: str = 'layoutGrid'
         self.isEnabled: bool = True
         self.columnWidth: float = 0
@@ -647,7 +654,7 @@ class SJSymbolInstanceLayer(_SJLayerBase):
         self.masterInfluenceEdgeMaxYPadding: float = None
         self.symbolID: SJObjectId = ''
 
-        self.overrides: SJSymbolInstanceLayer_overrides = {}
+        self.overrides: SJSymbolInstanceLayer_overrides = None
         self.overrideValues: List[SJOverride] = []
         self.scale: int = 1
 
@@ -696,7 +703,7 @@ class SJTextLayer(_SJLayerBase):
         self.textBehaviour: int = 0
 
     @staticmethod
-    def create(name: str, x,y,text: str = '', font_family: str = None, font_size: float = None):
+    def create(name: str, x, y, text: str = '', font_family: str = None, font_size: float = None):
         l_text = SJTextLayer()
         l_text.name = name
         l_text.do_objectID = get_object_id()
@@ -709,31 +716,28 @@ class SJTextLayer(_SJLayerBase):
 
         l_text.glyphBounds = '{{0, 0}, {120, 20}}'
 
-        if font_family is not None:
-            l_text.set_font_family(font_family)
-
-        if font_size is not None:
-            l_text.set_font_size(font_size)
+        if font_family is not None or font_size is not None:
+            l_text.set_font(font_family, font_size)
 
         return l_text
 
-    def set_font_size(self, size: float):
-        self.attributedString.set_font_size(size)
+    def get_color(self):
+        return self.attributedString.get_color()
 
-    def get_font_size(self):
-        return self.attributedString.get_font_size()
+    def set_color(self, color: SJColor):
+        self.attributedString.set_color(color)
 
-    def set_font_family(self, family: str):
-        self.attributedString.set_font_family(family)
+    def get_font(self):
+        return self.attributedString.get_font()
+
+    def set_font(self, font_family: str = None, font_size: float = 12):
+        return self.attributedString.set_font(font_size=font_size, font_family=font_family)
 
     def get_text(self):
-        return self.attributedString.get_text()
+        return self.attributedString.string
 
     def set_text(self, text: str):
-        self.attributedString.set_text(text)
-
-    def get_font_family(self):
-        return self.attributedString.get_font_family()
+        self.attributedString.string = text
 
 
 class SJGroupLayer(_SJLayerBase):
@@ -866,14 +870,14 @@ class SJShapeRectangleLayer(SJShapeLayer):
     def __init__(self):
         super().__init__()
         self._class: str = 'rectangle'
-        self.path: SJPath = SJPath()
+        self.path: SJPath = None
 
 
 class SJShapeOvalLayer(SJShapeLayer):
     def __init__(self):
         super().__init__()
         self._class: str = 'oval'
-        self.path: SJPath = SJPath()
+        self.path: SJPath = None
 
 
 class Point:
@@ -894,7 +898,7 @@ class SJShapePathLayer(SJShapeLayer):
     def __init__(self):
         super().__init__()
         self._class: str = 'shapePath'
-        self.path: SJPath = SJPath()
+        self.path: SJPath = None
 
     @staticmethod
     def create(name: str, points: List[Point]):
@@ -954,6 +958,36 @@ class SJPath:
         self.pointRadiusBehaviour: int = 0
 
 
+class SJTabStop:
+    def __init__(self):
+        self._class: str = 'textTab'
+        self.alignment: TextAlignmentEnum = TextAlignmentEnum.Left
+        self.location: int = None
+        self.options: dict = None
+
+
+class SJParagraphStyle:
+    def __init__(self):
+        self._class: str = 'paragraphStyle'
+        self.alignment: TextAlignmentEnum = TextAlignmentEnum.Left
+        self.allowsDefaultTighteningForTruncation: int = None
+        self.minimumLineHeight: int = None
+        self.maximumLineHeight: int = None
+        self.tabStops: List[SJTabStop] = None
+
+
+class SJFontDescriptorAttributes:
+    def __init__(self):
+        self.name: str = None
+        self.size: float = None
+
+
+class SJFontDescriptor:
+    def __init__(self):
+        self._class: str = 'fontDescriptor'
+        self.attributes: SJFontDescriptorAttributes = None
+
+
 class KeyValueArchive:
 
     def __init__(self):
@@ -977,7 +1011,7 @@ class KeyValueArchive:
         self._raw: dict = None  # cached copy of dict
 
     def get_archive(self):
-        if hasattr(self,'_raw') and self._raw is not None:
+        if hasattr(self, '_raw') and self._raw is not None:
             return self._raw
 
         bstr = base64.b64decode(self._archive)
@@ -998,48 +1032,205 @@ class KeyValueArchive:
 
 NSColorArchive = NewType('NSColorArchive', KeyValueArchive)
 
+_ = [
+    {
+        '_class': 'stringAttribute',
+        'location': 0,
+        'length': 1,
+        'attributes': {
+            'MSAttributedStringColorAttribute': {
+                '_class': 'color',
+                'alpha': 1,
+                'blue': 0,
+                'green': 0,
+                'red': 0
+            },
+            'MSAttributedStringFontAttribute': {
+                '_class': 'fontDescriptor',
+                'attributes': {
+                    'name': 'sovantaDTBETA-Regular',
+                    'size': 16
+                }
+            }
+        }
+    },
+    {
+        '_class': 'stringAttribute',
+        'location': 1,
+        'length': 1,
+        'attributes': {
+            'MSAttributedStringFontAttribute': {
+                '_class': 'fontDescriptor',
+                'attributes': {
+                    'name': 'sovantaDTBETA-Regular',
+                    'size': 16
+                }
+            },
+            'MSAttributedStringColorAttribute': {
+                '_class': 'color',
+                'alpha': 1,
+                'blue': 0,
+                'green': 0,
+                'red': 0
+            },
+            'kerning': 0.009600000000000001
+        }
+    },
+    {
+        '_class': 'stringAttribute',
+        'location': 2,
+        'length': 1,
+        'attributes': {
+            'MSAttributedStringColorAttribute': {
+                '_class': 'color',
+                'alpha': 1,
+                'blue': 0,
+                'green': 0,
+                'red': 0
+            },
+            'MSAttributedStringFontAttribute': {
+                '_class': 'fontDescriptor',
+                'attributes': {
+                    'name': 'sovantaDTBETA-Regular',
+                    'size': 16
+                }
+            }
+        }
+    },
+    {
+        '_class': 'stringAttribute',
+        'location': 3,
+        'length': 1,
+        'attributes': {
+            'MSAttributedStringFontAttribute': {
+                '_class': 'fontDescriptor',
+                'attributes': {
+                    'name': 'sovantaDTBETA-Regular',
+                    'size': 16
+                }
+            },
+            'MSAttributedStringColorAttribute': {
+                '_class': 'color',
+                'alpha': 1,
+                'blue': 0,
+                'green': 0,
+                'red': 0
+            },
+            'kerning': 0.0112
+        }
+    },
+    {
+        '_class': 'stringAttribute',
+        'location': 4,
+        'length': 2,
+        'attributes': {
+            'MSAttributedStringColorAttribute': {
+                '_class': 'color',
+                'alpha': 1,
+                'blue': 0,
+                'green': 0,
+                'red': 0
+            },
+            'MSAttributedStringFontAttribute': {
+                '_class': 'fontDescriptor',
+                'attributes': {
+                    'name': 'sovantaDTBETA-Regular',
+                    'size': 16
+                }
+            }
+        }
+    },
+    {
+        '_class': 'stringAttribute',
+        'location': 6,
+        'length': 1,
+        'attributes': {
+            'MSAttributedStringFontAttribute': {
+                '_class': 'fontDescriptor',
+                'attributes': {
+                    'name': 'sovantaDTBETA-Regular',
+                    'size': 16
+                }
+            },
+            'MSAttributedStringColorAttribute': {
+                '_class': 'color',
+                'alpha': 1,
+                'blue': 0,
+                'green': 0,
+                'red': 0
+            },
+            'kerning': 0.0112
+        }
+    },
+    {
+        '_class': 'stringAttribute',
+        'location': 7,
+        'length': 8,
+        'attributes': {
+            'MSAttributedStringColorAttribute': {
+                '_class': 'color',
+                'alpha': 1,
+                'blue': 0,
+                'green': 0,
+                'red': 0
+            },
+            'MSAttributedStringFontAttribute': {
+                '_class': 'fontDescriptor',
+                'attributes': {
+                    'name': 'sovantaDTBETA-Regular',
+                    'size': 16
+                }
+            }
+        }
+    }
+]
+
+
+class MSStringAttributeField:
+    def __init__(self):
+        self.MSAttributedStringColorAttribute: SJColor = None
+        self.MSAttributedStringFontAttribute: SJFontDescriptor = None
+        self.paragraphStyle: SJParagraphStyle = None
+        self.kerning: int = None
+        self.MSAttributedStringTextTransformAttribute: int = None
+        self.strikethroughStyle: int = None  # TODO ENUM
+        self.underlineStyle: int = None  # TODO ENUM
+
+
+class MSStringAttribute:
+    def __init__(self):
+        self._class: str = 'stringAttribute'
+        self.location: int = 0
+        self.length: int = 1
+        self.attributes: MSStringAttributeField = MSStringAttributeField()
+
 
 class MSAttributedString:
     def __init__(self):
         self._class: str = 'MSAttributedString'
-        self.archivedAttributedString: KeyValueArchive = KeyValueArchive()
+        # self.archivedAttributedString: KeyValueArchive = KeyValueArchive()
+        self.attributes: List[MSStringAttribute] = [MSStringAttribute()]
+        self.string: str = None
 
-    def get_text(self):
-        return self.archivedAttributedString.get_val(2)
+    def set_font(self, font_family: str, font_size: float = 12):
+        fD = SJFontDescriptor()
+        fD.attributes.name = font_family
+        fD.attributes.size = font_size
 
-    def set_text(self, string):
-        self.archivedAttributedString.set_val(2, string)
+        self.attributes[0].attributes.MSAttributedStringFontAttribute = fD
+
+    def get_font(self):
+        return self.attributes[0].attributes.MSAttributedStringFontAttribute if len(self.attributes) > 0 else None
 
     def get_color(self):
-        r = self.archivedAttributedString.get_val(25)
-        a = self.archivedAttributedString.get_val(26)
-        b = self.archivedAttributedString.get_val(27)
-        g = self.archivedAttributedString.get_val(28)
-        ret = SJColor()
-        ret.alpha = a
-        ret.red = r
-        ret.green = g
-        ret.blue = b
-
-        return ret
+        return self.attributes[0].attributes.MSAttributedStringColorAttribute if len(self.attributes) > 0 else None
 
     def set_color(self, color: SJColor):
-        self.archivedAttributedString.set_val(25, color.red)
-        self.archivedAttributedString.set_val(26, color.alpha)
-        self.archivedAttributedString.set_val(27, color.blue)
-        self.archivedAttributedString.set_val(28, color.green)
+        self.attributes[0].attributes.MSAttributedStringColorAttribute = color
 
-    def get_font_size(self):
-        return self.archivedAttributedString.get_val(16)
-
-    def set_font_size(self, size: float):
-        self.archivedAttributedString.set_val(16, size)
-
-    def set_font_family(self, family: str):
-        self.archivedAttributedString.set_val(17, family)
-
-    def get_font_family(self):
-        return self.archivedAttributedString.get_val(17)
+    def get_alignment(self):
+        ps = self.attributes[0].attributes.paragraphStyle
+        return ps.alignment if ps is not None else None
 
 
 class MSJSONFileReference:
@@ -1056,6 +1247,7 @@ class SJImageLayer(_SJLayerBase):
         self.clippingMask: SJStringRect = SJStringRect('{{0, 0}, {1, 1}}')
         self.fillReplacesImage: bool = None
         self.image: MSJSONFileReference = None
+        self.intendedDPI: int = None
 
 
 SJLayer = Union[
@@ -1100,6 +1292,9 @@ class SketchDocument(SJIDBase):
         self.layerTextStyles: SJSharedTextStyleContainer = SJSharedTextStyleContainer()
         self.layerStyles: SJSharedStyleContainer = SJSharedStyleContainer()
         self.layerSymbols: SJSharedSymbolContainer = SJSharedSymbolContainer()
+
+        self.foreignLayerStyles: List = []
+        self.foreignTextStyles: List = []
 
         self.pages: MSJSONFileReferenceList = []
         self.userInfo: dict = None  # TODO

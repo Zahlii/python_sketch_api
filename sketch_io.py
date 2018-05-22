@@ -65,7 +65,11 @@ class SketchToPy:
 
         return ttype
 
-    def __init__(self):
+    def __init__(self, debug=False):
+        self.debug = debug
+        if self.debug:
+            print('Debugging...')
+
         self._object_maps: Dict[sketch_types.SJObjectId, Any] = {}
         self._class_maps: Dict[str, List[Any]] = {}
 
@@ -214,13 +218,10 @@ class SketchToPy:
             missing_keys = required_keys.difference(available_keys)
             unknown_keys = available_keys.difference(optional_keys)
 
-            if len(missing_keys) > 0:
-                pass
-                #print('Missing some properties required by type file, but not found in sketch file in %s [%s]: %s' % (
-                #    p, x, missing_keys))
+            if len(missing_keys) > 0 and self.debug:
+                print('Missing some properties required by type file, but not found in sketch file in %s [%s]: %s' % (p, x, missing_keys))
 
-            if len(unknown_keys) > 0:
-                return
+            if len(unknown_keys) > 0 and self.debug:
                 print('Found unknown props in sketch file in %s with type %s' % (p, x))
                 for uk in unknown_keys:
                     jsuk = js[uk]

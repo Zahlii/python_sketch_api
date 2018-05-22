@@ -13,8 +13,8 @@ from . import sketch_types
 
 class SketchFile:
     @staticmethod
-    def from_file(path, load_images=False):
-        return SketchFile(path, load_images)
+    def from_file(path, load_images=False, debug=False):
+        return SketchFile(path, load_images, debug)
 
     @staticmethod
     def create_empty():
@@ -29,11 +29,13 @@ class SketchFile:
         s.sketch_user['16FC7444-C1AC-4FA3-9003-F6C778254BFF'] = ent
         return s
 
-    def __init__(self, path=None, load_images=False):
+    def __init__(self, path=None, load_images=False, debug=False):
         self._file_contents = {}
         self._file_sizes = {}
 
         self._raw = {}
+
+        self.debug = debug
 
         self.sketch_meta: sketch_types.SketchMeta = sketch_types.SketchMeta()
         self.sketch_user: sketch_types.SketchUserData = {}
@@ -108,7 +110,7 @@ class SketchFile:
         return _contents
 
     def _read_json_to_objects(self):
-        self._parser = sketch_io.SketchToPy()
+        self._parser = sketch_io.SketchToPy(debug=self.debug)
         self.sketch_meta: sketch_types.SketchMeta = self._parser.parse_meta(self._file_contents['meta.json'])
         self.sketch_document: sketch_types.SketchDocument = self._parser.parse_document(
             self._file_contents['document.json'])
@@ -176,6 +178,8 @@ class SketchFile:
         m = []
 
         def search_layers(layers):
+            if layers is None:
+                return
             for l in layers:
                 if l._class == 'symbolMaster':
                     m.append(l)
