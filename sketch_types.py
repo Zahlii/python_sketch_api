@@ -482,6 +482,9 @@ class _SJLayerBase(SJIDBase):
 
     def add_layer(self, r):
         # sketch_api._link_to_parent(r, self)
+        if self.layers is None:
+            self.layers = []
+
         self.layers.append(r)
 
     def remove_layer(self, r):
@@ -519,6 +522,8 @@ class SJSymbolMaster(_SJArtboardBase):
         path = []
 
         def search(layers):
+            if layers is None:
+                return
             for l in layers:
                 if l._class == 'text' and param in l.get_text():
                     return l
@@ -529,7 +534,7 @@ class SJSymbolMaster(_SJArtboardBase):
                     if res:
                         path.append(l)
                         return res
-                if len(l.layers) > 0:
+                if l.layers is not None and len(l.layers) > 0:
                     res = search(l.layers)
                     if res:
                         return res
@@ -543,6 +548,8 @@ class SJSymbolMaster(_SJArtboardBase):
 
         def search(layers, path):
             opath = path.copy()
+            if layers is None:
+                return
             for l in layers:
                 path = opath.copy()
                 path.append(l)
@@ -552,7 +559,7 @@ class SJSymbolMaster(_SJArtboardBase):
                     sid = l.symbolID
                     new_reference = file.get_symbol_by_id(sid)
                     yield from search(new_reference.layers, path)
-                if len(l.layers) > 0:
+                if l.layers is not None and len(l.layers) > 0:
                     yield from search(l.layers, path)
 
         yield from search(self.layers, p)
@@ -654,7 +661,7 @@ class SJSymbolInstanceLayer(_SJLayerBase):
         self.masterInfluenceEdgeMaxYPadding: float = None
         self.symbolID: SJObjectId = ''
 
-        self.overrides: SJSymbolInstanceLayer_overrides = None
+        self.overrides: SJSymbolInstanceLayer_overrides = {}
         self.overrideValues: List[SJOverride] = []
         self.scale: int = 1
 
@@ -778,10 +785,12 @@ class SJGroupLayer(_SJLayerBase):
         main_group.frame.y = min_y
         main_group.frame.width = max_x - min_x
         main_group.frame.height = max_y - min_y
+        main_group.layers = []
 
         for l in layer_list:
             l.frame.x -= min_x
             l.frame.y -= min_y
+
             main_group.layers.append(l)
 
         # sketch_api._link_to_parent(main_group.layers, main_group)
@@ -817,7 +826,7 @@ class SJShapeGroupLayer(_SJLayerBase):
         b.thickness = 1
         b.color = SJColorPalette.BLACK
 
-        r.style.borders.append(b)
+        r.style.borders = [b]
         return r
 
 
