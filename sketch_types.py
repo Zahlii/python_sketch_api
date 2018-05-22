@@ -744,7 +744,7 @@ class SJTextLayer(_SJLayerBase):
         return self.attributedString.string
 
     def set_text(self, text: str):
-        self.attributedString.string = text
+        self.attributedString.set_text(text)
 
 
 class SJGroupLayer(_SJLayerBase):
@@ -1221,11 +1221,14 @@ class MSAttributedString:
         self.attributes: List[MSStringAttribute] = [MSStringAttribute()]
         self.string: str = None
 
+    def set_text(self,text: str):
+        self.string = text
+        self.attributes[0].length = len(self.string)
+
     def set_font(self, font_family: str, font_size: float = 12):
         fD = SJFontDescriptor()
         fD.attributes.name = font_family
         fD.attributes.size = font_size
-
         self.attributes[0].attributes.MSAttributedStringFontAttribute = fD
 
     def get_font(self):
