@@ -994,7 +994,7 @@ class SJFontDescriptorAttributes:
 class SJFontDescriptor:
     def __init__(self):
         self._class: str = 'fontDescriptor'
-        self.attributes: SJFontDescriptorAttributes = None
+        self.attributes: SJFontDescriptorAttributes = SJFontDescriptorAttributes()
 
 
 class KeyValueArchive:
