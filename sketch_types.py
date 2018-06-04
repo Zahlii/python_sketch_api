@@ -616,6 +616,9 @@ class SJSymbolInstanceLayer(_SJLayerBase):
         ov.value = new_symbol.symbolID
         self.overrideValues.append(ov)
 
+        if self.overrides is None:
+            self.overrides = {}
+
         self.overrides[target_symbol_id] = {
             'symbolID': new_symbol.symbolID
         }
@@ -642,6 +645,9 @@ class SJSymbolInstanceLayer(_SJLayerBase):
             ret[i.do_objectID] = get_dict(ids)
             return ret
 
+        if self.overrides is None:
+            self.overrides = {}
+
         if len(target_text_ids) == 1:
             self.overrides[target_text_ids[0].do_objectID] = new_text
         else:
@@ -661,7 +667,7 @@ class SJSymbolInstanceLayer(_SJLayerBase):
         self.masterInfluenceEdgeMaxYPadding: float = None
         self.symbolID: SJObjectId = ''
 
-        self.overrides: SJSymbolInstanceLayer_overrides = {}
+        self.overrides: SJSymbolInstanceLayer_overrides = None
         self.overrideValues: List[SJOverride] = []
         self.scale: int = 1
 
