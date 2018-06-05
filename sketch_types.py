@@ -597,15 +597,15 @@ class SJOverride:
 
 class SJSymbolInstanceLayer(_SJLayerBase):
     @staticmethod
-    def create(symbol: SJSymbolMaster, x, y):
+    def create(symbol: SJSymbolMaster, x, y,w=None,h=None):
         l = SJSymbolInstanceLayer()
         l.do_objectID = get_object_id()
         l.symbolID = symbol.symbolID
         l.name = symbol.name
         l.frame.x = x
         l.frame.y = y
-        l.frame.width = symbol.frame.width
-        l.frame.height = symbol.frame.height
+        l.frame.width = symbol.frame.width if w is None else w
+        l.frame.height = symbol.frame.height if h is None else h
         return l
 
     def add_symbol_override(self, target_symbol_id, new_symbol: SJSymbolMaster):
