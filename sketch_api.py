@@ -65,6 +65,8 @@ class SketchFile:
 
                 elif 'images/' in info.filename or '.png' in info.filename:
                     if not load_images:
+                        print('Leaving image %s untouched' % info.filename)
+                        self.images[info.filename] = fc
                         continue
 
                     try:
@@ -75,10 +77,9 @@ class SketchFile:
                         else:
                             self.images[info.filename] = img
                         self._file_contents[info.filename] = img
-
-
                     except OSError as e:
-                        print('Couldnt load image from file %s' % info.filename)
+                        print('Couldnt load image from file %s, using byte data' % info.filename)
+                        self.images[info.filename] = fc
 
 
                 else:
@@ -93,14 +94,14 @@ class SketchFile:
         _link_to_parent(self.sketch_user, self)
         _link_to_parent(self.sketch_pages, self)
 
-    def save_to(self, fn):
+    def save_to(self, fn, force_include_pages=None):
 
         assert len(
             self.sketch_pages) > 0, 'At least one content page is required for sketch to correctly read the file.'
 
         c = zipfile.ZipFile(fn, mode='w', compression=8)
 
-        _contents = self._convert_objects_to_json()
+        _contents = self._convert_objects_to_json(force_include_pages)
         print('Saving dict with entries: %s' % _contents.keys())
         for fname, fcont in _contents.items():
             c.writestr(fname, fcont, compress_type=8)
@@ -147,7 +148,10 @@ class SketchFile:
     def get_preview(self):
         return self.preview
 
-    def _convert_objects_to_json(self):
+    def _convert_objects_to_json(self, force_include_pages=None):
+        if force_include_pages is None:
+            force_include_pages = []
+
         _contents = {}
         _contents['meta.json'] = sketch_io.PyToSketch.write(self.sketch_meta)  # meta.json
         _contents['document.json'] = sketch_io.PyToSketch.write(self.sketch_document)  # document.json
@@ -157,13 +161,21 @@ class SketchFile:
             t = 'pages/' + page.do_objectID + '.json'
 
             # print(page.name)
-            if page.name.startswith('- '):
+            if page.name.startswith('- ') and page.name not in force_include_pages:
+                print('Skipping page %s and copying original content' % page.name)
                 _contents[t] = self._raw[t]
             else:
+                print('Saving page %s' % page.name)
                 _contents[t] = sketch_io.PyToSketch.write(page)
 
         for name, image in self.images.items():
-            _contents[name] = self.img_to_str(image)
+
+            if isinstance(image, np.ndarray):
+                print('Saving image %s from array' % name)
+                _contents[name] = self.img_to_str(image)
+            else:
+                print('Using original image %s' % name)
+                _contents[name] = image
 
 
         _contents['previews/preview.png'] = self.img_to_str(self.preview)
