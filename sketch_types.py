@@ -509,6 +509,33 @@ class SJSimpleGrid(SJIDBase):
         self.thickGridTimes: int = 0
 
 
+def find_layers(layers, cls, file):
+    p = []
+
+    def search(inner_layers, path):
+        opath = path.copy()
+        if inner_layers is None:
+            return
+        for l in inner_layers:
+            path = opath.copy()
+            path.append(l)
+            if l._class == cls:
+                yield path
+            if l._class == 'symbolInstance':
+                sid = l.symbolID
+                new_reference = file.get_symbol_by_id(sid)
+                if new_reference is not None and new_reference.layers is not None:
+                    # path = opath.copy()
+                    # path.append(new_reference)
+                    yield from search(new_reference.layers, path)
+            if l.layers is not None and len(l.layers) > 0:
+                yield from search(l.layers, path)
+
+    if layers is None:
+        return
+    yield from search(layers, p)
+
+
 class SJSymbolMaster(_SJArtboardBase):
     def __init__(self):
         super().__init__()
@@ -518,51 +545,11 @@ class SJSymbolMaster(_SJArtboardBase):
         self.changeIdentifier: int = 0
         self.grid: SJSimpleGrid = None
 
-    def find_text_layer_by_text(self, param, file):
-        path = []
-
-        def search(layers):
-            if layers is None:
-                return
-            for l in layers:
-                if l._class == 'text' and param in l.get_text():
-                    return l
-                if l._class == 'symbolInstance':
-                    sid = l.symbolID
-                    new_reference = file.get_symbol_by_id(sid)
-                    res = search(new_reference.layers)
-                    if res:
-                        path.append(l)
-                        return res
-                if l.layers is not None and len(l.layers) > 0:
-                    res = search(l.layers)
-                    if res:
-                        return res
-
-        res = search(self.layers)
-        path.append(res)
-        return path
-
     def find_all_text_layers(self, file):
-        p = []
+        yield from find_layers(self.layers, 'text', file)
 
-        def search(layers, path):
-            opath = path.copy()
-            if layers is None:
-                return
-            for l in layers:
-                path = opath.copy()
-                path.append(l)
-                if l._class == 'text':
-                    yield path
-                if l._class == 'symbolInstance':
-                    sid = l.symbolID
-                    new_reference = file.get_symbol_by_id(sid)
-                    yield from search(new_reference.layers, path)
-                if l.layers is not None and len(l.layers) > 0:
-                    yield from search(l.layers, path)
-
-        yield from search(self.layers, p)
+    def find_all_image_layers(self, file):
+        yield from find_layers(self.layers, 'symbolInstance', file)
 
 
 SJSymbolInstanceLayer_overrides = Dict[SJObjectId, Union[str, SJImageDataReference, dict]]
