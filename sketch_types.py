@@ -608,53 +608,25 @@ class SJSymbolInstanceLayer(_SJLayerBase):
         l.frame.height = symbol.frame.height if h is None else h
         return l
 
-    def add_symbol_override(self, target_symbol_id, new_symbol: SJSymbolMaster):
+    def add_symbol_override(self, target_symbol_ids: List[_SJLayerBase], new_symbol: SJSymbolMaster):
+        target_symbol_ids = [t for t in target_symbol_ids if t._class in ['symbolInstance']]
+
+        self.add_nested(target_symbol_ids, new_symbol.symbolID, '_symbolID')
+
+    def add_nested(self, parent_layers, value, name='_stringValue'):
         ov = SJOverride()
         ov.do_objectID = get_object_id()
 
-        ov.overrideName = target_symbol_id + '_symbolID'
-
-        ov.value = new_symbol.symbolID
-        self.overrideValues.append(ov)
-
-        if self.overrides is None:
-            self.overrides = {}
-
-        self.overrides[target_symbol_id] = {
-            'symbolID': new_symbol.symbolID
-        }
-
-    def add_text_override(self, target_text_ids: List[_SJLayerBase], new_text: str):
-        ov = SJOverride()
-        ov.do_objectID = get_object_id()
-
-        target_text_ids = [t for t in target_text_ids if t._class in ['symbolInstance', 'text']]
-
-        key = '/'.join([t.do_objectID for t in target_text_ids]) + '_stringValue'
+        key = '/'.join([t.do_objectID for t in parent_layers]) + name
 
         ov.overrideName = key
-        ov.value = new_text
+        ov.value = value
         self.overrideValues.append(ov)
 
-        def get_dict(ids):
-            if len(ids) == 1:
-                return {ids[0].do_objectID: new_text}
+    def add_text_override(self, target_text_ids: List[_SJLayerBase], new_text: str):
+        target_text_ids = [t for t in target_text_ids if t._class in ['symbolInstance', 'text']]
+        self.add_nested(target_text_ids, new_text, '_stringValue')
 
-            ret = {}
-
-            i = ids.pop(0)
-            ret[i.do_objectID] = get_dict(ids)
-            return ret
-
-        if self.overrides is None:
-            self.overrides = {}
-
-        if len(target_text_ids) == 1:
-            self.overrides[target_text_ids[0].do_objectID] = new_text
-        else:
-            main_id = target_text_ids.pop(0).do_objectID
-            d = get_dict(target_text_ids)
-            self.overrides[main_id] = d
 
     def __init__(self):
         super().__init__()
