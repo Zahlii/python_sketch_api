@@ -449,6 +449,14 @@ class SJCurvePoint:
 SJCurvePointList = List[SJCurvePoint]
 
 
+class SJFlowConnection(SJIDBase):
+    def __init__(self):
+        super().__init__()
+        self._class: str = 'MSImmutableFlowConnection'
+        self.destinationArtboardID: SJObjectId = None
+        self.animationType: int = 0
+
+
 class _SJLayerBase(SJIDBase):
     def __init__(self):
         super().__init__()
@@ -479,6 +487,7 @@ class _SJLayerBase(SJIDBase):
         self.resizesContent: bool = None
         self.isFlowHome: bool = None
         self.layout: SJLayoutGrid = None
+        self.flow: SJFlowConnection = None
 
     def add_layer(self, r):
         # sketch_api._link_to_parent(r, self)
@@ -492,6 +501,11 @@ class _SJLayerBase(SJIDBase):
 
     def get_layer_by_type(self, class_str):
         return [x for x in self.layers if x._class == class_str]
+
+    def connect_to_artboard(self, artboard):
+        self.flow = SJFlowConnection()
+        self.flow.do_objectID = get_object_id()
+        self.flow.destinationArtboardID = artboard.do_objectID
 
 
 class _SJArtboardBase(_SJLayerBase):
