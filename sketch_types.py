@@ -805,6 +805,8 @@ class SJShapeGroupLayer(_SJLayerBase):
         b.thickness = 1
         b.color = SJColorPalette.BLACK
 
+        if r.style is None:
+            r.style = SJStyle()
         r.style.borders = [b]
         return r
 
