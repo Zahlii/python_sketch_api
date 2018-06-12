@@ -770,6 +770,9 @@ class SJGroupLayer(_SJLayerBase):
             l.frame.x -= min_x
             l.frame.y -= min_y
 
+            if main_group.layers is None:
+                main_group.layers = []
+
             main_group.layers.append(l)
 
         # sketch_api._link_to_parent(main_group.layers, main_group)
@@ -852,6 +855,9 @@ class SJShapeRectangleLayer(SJShapeLayer):
 
         l.points = l.path.points
 
+        if r.layers is None:
+            r.layers = []
+
         r.layers.append(l)
 
         # sketch_api._link_to_parent(r.layers, r)
@@ -930,6 +936,8 @@ class SJShapePathLayer(SJShapeLayer):
 
         path_layer.points = path_layer.path.points
 
+        if group_layer.layers is None:
+            group_layer.layers = []
         group_layer.layers.append(path_layer)
 
         # sketch_api._link_to_parent(group_layer.layers, group_layer)
@@ -1304,6 +1312,9 @@ class SketchPage(_SJLayerBase):
         return 'pages/%s' % self.do_objectID
 
     def add_artboard(self, artboard: SJArtboardLayer):
+        if self.layers is None:
+            self.layers = []
+
         self.layers.append(artboard)
         x = self._parent.sketch_meta.pagesAndArtboards[self.do_objectID]
         m = SJArtboardDescription()
