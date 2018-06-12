@@ -909,8 +909,8 @@ class SJShapePathLayer(SJShapeLayer):
             min_y = min(min_y, pt.y)
             max_y = max(max_y, pt.y)
 
-        w = max_x - min_x
-        h = max_y - min_y
+        w = min(1,max_x - min_x)
+        h = min(1,max_y - min_y)
 
         group_layer = SJShapeGroupLayer.create(name, min_x, min_y, w, h)
 
