@@ -208,11 +208,13 @@ class SketchFile:
             if s.do_objectID == idx or s.symbolID == idx:
                 return s
 
-    def search_symbols_by_name(self, name: str) -> List[sketch_types.SJSymbolMaster]:
+    def search_symbols_by_name(self, name: str, exact=True) -> List[sketch_types.SJSymbolMaster]:
         m = self.get_available_symbols()
         search = []
         for s in m:
-            if name in s.name:
+            if not exact and name in s.name:
+                search.append(s)
+            elif exact and name == s.name:
                 search.append(s)
         return search
 
