@@ -65,7 +65,8 @@ class SketchFile:
 
                 elif 'images/' in info.filename or '.png' in info.filename:
                     if not load_images:
-                        print('Leaving image %s untouched' % info.filename)
+                        if self.debug:
+                            print('Leaving image %s untouched' % info.filename)
                         self.images[info.filename] = fc
                         continue
 
@@ -78,7 +79,8 @@ class SketchFile:
                             self.images[info.filename] = img
                         self._file_contents[info.filename] = img
                     except OSError as e:
-                        print('Couldnt load image from file %s, using byte data' % info.filename)
+                        if self.debug:
+                            print('Couldnt load image from file %s, using byte data' % info.filename)
                         self.images[info.filename] = fc
 
 
@@ -102,7 +104,8 @@ class SketchFile:
         c = zipfile.ZipFile(fn, mode='w', compression=8)
 
         _contents = self._convert_objects_to_json(force_include_pages)
-        print('Saving dict with entries: %s' % _contents.keys())
+        if self.debug:
+            print('Saving dict with entries: %s' % _contents.keys())
         for fname, fcont in _contents.items():
             c.writestr(fname, fcont, compress_type=8)
 
@@ -162,21 +165,24 @@ class SketchFile:
 
             # print(page.name)
             if page.name.startswith('- ') and page.name not in force_include_pages:
-                print('Skipping page %s and copying original content' % page.name)
+                if self.debug:
+                    print('Skipping page %s and copying original content' % page.name)
                 _contents[t] = self._raw[t]
             else:
-                print('Saving page %s' % page.name)
+                if self.debug:
+                    print('Saving page %s' % page.name)
                 _contents[t] = sketch_io.PyToSketch.write(page)
 
         for name, image in self.images.items():
 
             if isinstance(image, np.ndarray):
-                print('Saving image %s from array' % name)
+                if self.debug:
+                    print('Saving image %s from array' % name)
                 _contents[name] = self.img_to_str(image)
             else:
-                print('Using original image %s' % name)
+                if self.debug:
+                    print('Using original image %s' % name)
                 _contents[name] = image
-
 
         _contents['previews/preview.png'] = self.img_to_str(self.preview)
 
