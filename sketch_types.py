@@ -542,7 +542,7 @@ def find_layers(layers, cls, file):
                     # path = opath.copy()
                     # path.append(new_reference)
                     yield from search(new_reference.layers, path)
-            if l.layers is not None and len(l.layers) > 0:
+            if hasattr(l,'layers') and l.layers is not None and len(l.layers) > 0:
                 yield from search(l.layers, path)
 
     if layers is None:

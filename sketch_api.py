@@ -199,12 +199,16 @@ class SketchFile:
             if layers is None:
                 return
             for l in layers:
+                if l is None:
+                    continue
                 if l._class == 'symbolMaster':
                     m.append(l)
-                search_layers(l.layers)
+                if hasattr(l,'layers') and l.layers is not None:
+                    search_layers(l.layers)
 
         for p in self.sketch_pages:
-            search_layers(p.layers)
+            if p is not None:
+                search_layers(p.layers)
 
         return m
 
