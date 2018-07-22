@@ -261,6 +261,10 @@ class SketchToPy:
 
         if 'do_objectID' in js:
             self._object_maps[js['do_objectID']] = ret
+        if 'sharedObjectID' in js:
+            self._object_maps[js['sharedObjectID']] = ret
+        if 'symbolID' in js:
+            self._object_maps[js['symbolID']] = ret
         if '_class' in js:
             c = js['_class']
             if c not in self._class_maps:
