@@ -192,7 +192,7 @@ class SketchFile:
 
         return _contents
 
-    def get_available_symbols(self) -> List[sketch_types.SJSymbolMaster]:
+    def get_available_symbols(self) -> List['sketch_types.SJSymbolMaster']:
         m = []
 
         def search_layers(layers):

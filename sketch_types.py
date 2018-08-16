@@ -1,3 +1,4 @@
+import copy
 import math
 
 import base64
@@ -482,6 +483,7 @@ class _SJLayerBase(SJIDBase):
         self.includeBackgroundColorInExport: bool = None
         self.resizingConstraint: int = 63
         self.frame: SJRect = SJRect()
+        self.frame.do_objectID = get_object_id()
         self.originalObjectID: SJObjectId = None
         self.userInfo: dict = None
         self.resizesContent: bool = None
@@ -726,6 +728,50 @@ class SJTextLayer(_SJLayerBase):
         self.attributedString.set_text(text)
 
 
+def group_coords(main_group, layer_list: List[_SJLayerBase]):
+    min_x = math.inf
+    min_y = math.inf
+    max_x = -math.inf
+    max_y = -math.inf
+
+    for l in layer_list:
+        x = l.frame.x
+        y = l.frame.y
+
+        if x < min_x:
+            min_x = x
+        if y < min_y:
+            min_y = y
+
+        x += l.frame.width
+        y += l.frame.height
+
+        if x > max_x:
+            max_x = x
+        if y > max_y:
+            max_y = y
+
+    main_group.frame = SJRect()
+    main_group.frame.x = min_x
+    main_group.frame.y = min_y
+    main_group.frame.width = max_x - min_x
+    main_group.frame.height = max_y - min_y
+    main_group.layers = []
+
+    for l in layer_list:
+        l.frame.x -= min_x
+        l.frame.y -= min_y
+
+        if main_group.layers is None:
+            main_group.layers = []
+
+        main_group.layers.append(l)
+
+    # sketch_api._link_to_parent(main_group.layers, main_group)
+
+    return main_group
+
+
 class SJGroupLayer(_SJLayerBase):
     def __init__(self):
         super().__init__()
@@ -738,46 +784,7 @@ class SJGroupLayer(_SJLayerBase):
         main_group = SJGroupLayer()
         main_group.name = name
 
-        min_x = math.inf
-        min_y = math.inf
-        max_x = -math.inf
-        max_y = -math.inf
-
-        for l in layer_list:
-            x = l.frame.x
-            y = l.frame.y
-
-            if x < min_x:
-                min_x = x
-            if y < min_y:
-                min_y = y
-
-            x += l.frame.width
-            y += l.frame.height
-
-            if x > max_x:
-                max_x = x
-            if y > max_y:
-                max_y = y
-
-        main_group.frame.x = min_x
-        main_group.frame.y = min_y
-        main_group.frame.width = max_x - min_x
-        main_group.frame.height = max_y - min_y
-        main_group.layers = []
-
-        for l in layer_list:
-            l.frame.x -= min_x
-            l.frame.y -= min_y
-
-            if main_group.layers is None:
-                main_group.layers = []
-
-            main_group.layers.append(l)
-
-        # sketch_api._link_to_parent(main_group.layers, main_group)
-
-        return main_group
+        return group_coords(main_group, layer_list)
 
 
 class SJShapeGroupLayer(_SJLayerBase):
@@ -790,16 +797,11 @@ class SJShapeGroupLayer(_SJLayerBase):
         self.clippingMaskMode: MaskModeEnum = MaskModeEnum.Alpha
 
     @staticmethod
-    def create(name, x, y, w, h):
+    def create(name, layer_list: List[_SJLayerBase]):
         r = SJShapeGroupLayer()
         r.do_objectID = get_object_id()
         r.name = name
         r.isVisible = True
-        r.frame = SJRect()
-        r.frame.x = x
-        r.frame.y = y
-        r.frame.width = w
-        r.frame.height = h
 
         b = SJBorder()
         b.fillType = FillTypeEnum.Solid
@@ -811,8 +813,14 @@ class SJShapeGroupLayer(_SJLayerBase):
         if r.style is None:
             r.style = SJStyle()
         r.style.borders = [b]
-        return r
 
+        return group_coords(r, layer_list)
+
+    def get_base_shape(self):
+        l = copy.deepcopy(self.layers[0])
+        l.frame.x += self.frame.x
+        l.frame.y += self.frame.y
+        return l
 
 class SJShapeLayer(_SJLayerBase):
     def __init__(self):
@@ -827,15 +835,16 @@ class SJShapeLayer(_SJLayerBase):
         self.hasConvertedToNewRoundCorners: bool = None
 
 
+
+
 class SJShapeRectangleLayer(SJShapeLayer):
     @staticmethod
     def create(name, x, y, w, h) -> SJShapeGroupLayer:
-        r = SJShapeGroupLayer.create(name, x, y, w, h)
-
         l = SJShapeRectangleLayer()
+        l.name = name
         l.do_objectID = get_object_id()
-        l.frame.x = 0
-        l.frame.y = 0
+        l.frame.x = x
+        l.frame.y = y
         l.frame.width = w
         l.frame.height = h
         l.path = SJPath()
@@ -855,10 +864,7 @@ class SJShapeRectangleLayer(SJShapeLayer):
 
         l.points = l.path.points
 
-        if r.layers is None:
-            r.layers = []
-
-        r.layers.append(l)
+        r = SJShapeGroupLayer.create(name,[l])
 
         # sketch_api._link_to_parent(r.layers, r)
         return r
