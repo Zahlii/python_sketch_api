@@ -1277,6 +1277,15 @@ class SJAssetCollection:
 MSJSONFileReferenceList = List[MSJSONFileReference]
 
 
+class SJForeignSymbol:
+    def __init__(self):
+        self._class: str = 'MSImmutableForeignSymbol'
+        self.libraryID: SJObjectId = None
+        self.sourceLibraryName: str = None
+        self.originalMaster: SJSymbolMaster = None
+        self.symbolMaster: SJSymbolMaster = None
+
+
 # document.json
 class SketchDocument(SJIDBase):
     def __init__(self):
@@ -1287,7 +1296,7 @@ class SketchDocument(SJIDBase):
         self._class: str = 'document'
         self.colorSpace: int = 0
         self.currentPageIndex: int = 0
-        self.foreignSymbols: List = []
+        self.foreignSymbols: List[SJForeignSymbol] = []
         self.assets: SJAssetCollection = SJAssetCollection()
 
         self.layerTextStyles: SJSharedTextStyleContainer = SJSharedTextStyleContainer()
