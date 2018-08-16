@@ -918,12 +918,10 @@ class SJShapePathLayer(SJShapeLayer):
         w = max(1,max_x - min_x)
         h = max(1,max_y - min_y)
 
-        group_layer = SJShapeGroupLayer.create(name, min_x, min_y, w, h)
-
         path_layer = SJShapePathLayer()
         path_layer.name = name
-        path_layer.frame.x = 0
-        path_layer.frame.y = 0
+        path_layer.frame.x = min_x
+        path_layer.frame.y = max_x
 
         path_layer.frame.width = w
         path_layer.frame.height = h
@@ -942,12 +940,7 @@ class SJShapePathLayer(SJShapeLayer):
 
         path_layer.points = path_layer.path.points
 
-        if group_layer.layers is None:
-            group_layer.layers = []
-        group_layer.layers.append(path_layer)
-
-        # sketch_api._link_to_parent(group_layer.layers, group_layer)
-
+        group_layer = SJShapeGroupLayer.create(name, [path_layer])
         return group_layer
 
 
