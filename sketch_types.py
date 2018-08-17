@@ -847,6 +847,7 @@ class SJShapeRectangleLayer(SJShapeLayer):
         l.frame.y = y
         l.frame.width = w
         l.frame.height = h
+
         l.path = SJPath()
         l.path.pointRadiusBehaviour = 1
 
