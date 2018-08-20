@@ -883,6 +883,13 @@ class SJShapeOvalLayer(SJShapeLayer):
         self.path: SJPath = None
 
 
+class SJShapeStarLayer(SJShapeLayer):
+    def __init__(self):
+        super().__init__()
+        self._class: str = 'star'
+        self.path: SJPath = None
+
+
 class Point:
     @staticmethod
     def from_str(s: PointString):
@@ -1252,7 +1259,7 @@ class SJImageLayer(_SJLayerBase):
 
 
 SJLayer = Union[
-    SJImageLayer, SJSymbolMaster, SJArtboardLayer, SJTextLayer, SJGroupLayer, SJShapeGroupLayer, SJShapeOvalLayer, SJShapeRectangleLayer, SJShapePathLayer, SJSymbolInstanceLayer]
+    SJImageLayer, SJSymbolMaster, SJArtboardLayer, SJTextLayer, SJGroupLayer, SJShapeGroupLayer, SJShapeStarLayer, SJShapeOvalLayer, SJShapeRectangleLayer, SJShapePathLayer, SJSymbolInstanceLayer]
 SJLayerList = List[SJLayer]
 
 
