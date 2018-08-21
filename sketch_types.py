@@ -822,6 +822,7 @@ class SJShapeGroupLayer(_SJLayerBase):
         l.frame.y += self.frame.y
         return l
 
+
 class SJShapeLayer(_SJLayerBase):
     def __init__(self):
         super().__init__()
@@ -833,8 +834,6 @@ class SJShapeLayer(_SJLayerBase):
         self.booleanOperation: BooleanOperation = BooleanOperation.Union
         self.fixedRadius: int = None
         self.hasConvertedToNewRoundCorners: bool = None
-
-
 
 
 class SJShapeRectangleLayer(SJShapeLayer):
@@ -888,7 +887,15 @@ class SJShapeStarLayer(SJShapeLayer):
         super().__init__()
         self._class: str = 'star'
         self.path: SJPath = None
+        self.numberOfPoints: int = 0
+        self.radius: float = 0
 
+
+class SJShapeTriangleLayer(SJShapeLayer):
+    def __init__(self):
+        super().__init__()
+        self._class: str = 'triangle'
+        self.path: SJPath = None
 
 class Point:
     @staticmethod
@@ -1259,7 +1266,7 @@ class SJImageLayer(_SJLayerBase):
 
 
 SJLayer = Union[
-    SJImageLayer, SJSymbolMaster, SJArtboardLayer, SJTextLayer, SJGroupLayer, SJShapeGroupLayer, SJShapeStarLayer, SJShapeOvalLayer, SJShapeRectangleLayer, SJShapePathLayer, SJSymbolInstanceLayer]
+    SJImageLayer, SJSymbolMaster, SJArtboardLayer, SJTextLayer, SJGroupLayer, SJShapeGroupLayer, SJShapeStarLayer, SJShapeTriangleLayer, SJShapeOvalLayer, SJShapeRectangleLayer, SJShapePathLayer, SJSymbolInstanceLayer]
 SJLayerList = List[SJLayer]
 
 
