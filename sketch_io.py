@@ -36,8 +36,10 @@ class SketchToPy:
             if is_right and 'self.%s:' % field in l:
                 if ':' not in l:
                     if '[]' in l:
+                        cls.type_map_ext[cls_name][field] = 'list'
                         return 'list'
                     if '{}' in l:
+                        cls.type_map_ext[cls_name][field] = 'dict'
                         return 'dict'
                 dtype = l.split(':')[1].split('=')[0].strip()
                 tt = cls.get_full_type(dtype)

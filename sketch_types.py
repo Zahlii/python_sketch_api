@@ -483,7 +483,7 @@ class _SJLayerBase(SJIDBase):
         self.includeBackgroundColorInExport: bool = None
         self.resizingConstraint: int = 63
         self.frame: SJRect = SJRect()
-        self.frame.do_objectID = get_object_id()
+        self.frame.do_objectID = None # get_object_id()
         self.originalObjectID: SJObjectId = None
         self.userInfo: dict = None
         self.resizesContent: bool = None
