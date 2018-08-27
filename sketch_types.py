@@ -1,7 +1,7 @@
-import copy
 import math
 
 import base64
+import copy
 import secrets
 from biplist import readPlistFromString, writePlistToString
 from enum import Enum
@@ -525,31 +525,34 @@ class SJSimpleGrid(SJIDBase):
         self.thickGridTimes: int = 0
 
 
-def find_layers(layers, cls, file):
+def find_layers(file, symbol: 'SJSymbolMaster', cls: str, images_to_copy=None):
     p = []
 
-    def search(inner_layers, path):
+    def search(layers, path):
         opath = path.copy()
-        if inner_layers is None:
+        if layers is None:
             return
-        for l in inner_layers:
+        for l in layers:
             path = opath.copy()
             path.append(l)
+            if l.style is not None and l.style.fills is not None and images_to_copy is not None:
+                for f in l.style.fills:
+                    if f.image is not None:
+                        # print('Adding image from fill')
+                        images_to_copy.add(f.image._ref)
             if l._class == cls:
                 yield path
             if l._class == 'symbolInstance':
                 sid = l.symbolID
                 new_reference = file.get_symbol_by_id(sid)
                 if new_reference is not None and new_reference.layers is not None:
-                    # path = opath.copy()
-                    # path.append(new_reference)
                     yield from search(new_reference.layers, path)
-            if hasattr(l,'layers') and l.layers is not None and len(l.layers) > 0:
+            if hasattr(l, 'layers') and l.layers is not None and len(l.layers) > 0:
                 yield from search(l.layers, path)
 
-    if layers is None:
+    if symbol.layers is None:
         return
-    yield from search(layers, p)
+    yield from search(symbol.layers, p)
 
 
 class SJSymbolMaster(_SJArtboardBase):
@@ -562,10 +565,10 @@ class SJSymbolMaster(_SJArtboardBase):
         self.grid: SJSimpleGrid = None
 
     def find_all_text_layers(self, file):
-        yield from find_layers(self.layers, 'text', file)
+        yield from find_layers(file, self, 'text')
 
     def find_all_image_layers(self, file):
-        yield from find_layers(self.layers, 'symbolInstance', file)
+        yield from find_layers(file, self, 'symbolInstance')
 
 
 SJSymbolInstanceLayer_overrides = Dict[SJObjectId, Union[str, SJImageDataReference, dict]]
@@ -599,7 +602,7 @@ class SJOverride:
 
 class SJSymbolInstanceLayer(_SJLayerBase):
     @staticmethod
-    def create(symbol: SJSymbolMaster, x, y,w=None,h=None):
+    def create(symbol: SJSymbolMaster, x, y, w=None, h=None):
         l = SJSymbolInstanceLayer()
         l.do_objectID = get_object_id()
         l.symbolID = symbol.symbolID
@@ -628,7 +631,6 @@ class SJSymbolInstanceLayer(_SJLayerBase):
     def add_text_override(self, target_text_ids: List[_SJLayerBase], new_text: str):
         target_text_ids = [t for t in target_text_ids if t._class in ['symbolInstance', 'text']]
         self.add_nested(target_text_ids, new_text, '_stringValue')
-
 
     def __init__(self):
         super().__init__()
@@ -864,7 +866,7 @@ class SJShapeRectangleLayer(SJShapeLayer):
 
         l.points = l.path.points
 
-        r = SJShapeGroupLayer.create(name,[l])
+        r = SJShapeGroupLayer.create(name, [l])
 
         # sketch_api._link_to_parent(r.layers, r)
         return r
@@ -896,6 +898,7 @@ class SJShapeTriangleLayer(SJShapeLayer):
         super().__init__()
         self._class: str = 'triangle'
         self.path: SJPath = None
+
 
 class Point:
     @staticmethod
@@ -930,8 +933,8 @@ class SJShapePathLayer(SJShapeLayer):
             min_y = min(min_y, pt.y)
             max_y = max(max_y, pt.y)
 
-        w = max(1,max_x - min_x)
-        h = max(1,max_y - min_y)
+        w = max(1, max_x - min_x)
+        h = max(1, max_y - min_y)
 
         path_layer = SJShapePathLayer()
         path_layer.name = name
@@ -1224,7 +1227,7 @@ class MSAttributedString:
         self.attributes: List[MSStringAttribute] = [MSStringAttribute()]
         self.string: str = None
 
-    def set_text(self,text: str):
+    def set_text(self, text: str):
         self.string = text
         self.attributes[0].length = len(self.string)
 

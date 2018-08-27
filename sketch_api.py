@@ -1,11 +1,9 @@
 import json
+import numpy as np
 import zipfile
-from enum import Enum
+from PIL import Image, ImageFile
 from io import BytesIO
 from typing import List, Dict
-
-import numpy as np
-from PIL import Image, ImageFile
 
 from . import sketch_io
 from . import sketch_types
@@ -33,6 +31,7 @@ class SketchFile:
         self._file_contents = {}
         self._file_sizes = {}
 
+        self._available_symbols = None
         self._raw = {}
 
         self.debug = debug
@@ -193,7 +192,10 @@ class SketchFile:
         return _contents
 
     def get_available_symbols(self) -> List['sketch_types.SJSymbolMaster']:
-        m = []
+        if self._available_symbols is not None:
+            return self._available_symbols
+
+        self._available_symbols = []
 
         def search_layers(layers):
             if layers is None:
@@ -202,15 +204,18 @@ class SketchFile:
                 if l is None:
                     continue
                 if l._class == 'symbolMaster':
-                    m.append(l)
-                if hasattr(l,'layers') and l.layers is not None:
+                    self._available_symbols.append(l)
+                if hasattr(l, 'layers') and l.layers is not None:
                     search_layers(l.layers)
 
         for p in self.sketch_pages:
             if p is not None:
                 search_layers(p.layers)
 
-        return m
+        for s in self.sketch_document.foreignSymbols:
+            self._available_symbols.append(s.originalMaster)
+
+        return self._available_symbols
 
     def get_symbol_by_id(self, idx):
         m = self.get_available_symbols()
@@ -218,7 +223,7 @@ class SketchFile:
             if s.do_objectID == idx or s.symbolID == idx:
                 return s
 
-    def search_symbols_by_name(self, name: str, exact=True) -> List[sketch_types.SJSymbolMaster]:
+    def search_symbols_by_name(self, name: str, exact=True) -> List['sketch_types.SJSymbolMaster']:
         m = self.get_available_symbols()
         search = []
         for s in m:
@@ -294,7 +299,7 @@ def _link_to_parent(obj, parent=None):
                 continue
             _link_to_parent(v, obj)
 """
-    if parent is not None and hasattr(obj,'__dict__'):
+    if parent is not None and hasattr(obj, '__dict__'):
         setattr(obj, '_parent', parent)
 
 
@@ -409,7 +414,8 @@ if __name__ == '__main__':
 
     test_artboard.add_layer(l_path)
 
-    l_text = sketch_types.SJTextLayer.create('Sample Text', 20,350, text='Hello World', font_family='sovantaDTBETA-Regular', font_size=52)
+    l_text = sketch_types.SJTextLayer.create('Sample Text', 20, 350, text='Hello World',
+                                             font_family='sovantaDTBETA-Regular', font_size=52)
 
     test_artboard.add_layer(l_text)
 

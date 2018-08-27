@@ -1,12 +1,11 @@
-import copy
 import json
+import os
 from json import JSONEncoder
 from typing import Dict, Any, List
 
-import os
 from . import sketch_types
 
-with open(os.path.join(os.path.abspath(os.path.dirname(__file__)),'sketch_types.py'), 'r') as f:
+with open(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'sketch_types.py'), 'r') as f:
     lines = f.readlines()
 
 
@@ -219,7 +218,8 @@ class SketchToPy:
             unknown_keys = available_keys.difference(optional_keys)
 
             if len(missing_keys) > 0 and self.debug:
-                print('Missing some properties required by type file, but not found in sketch file in %s [%s]: %s' % (p, x, missing_keys))
+                print('Missing some properties required by type file, but not found in sketch file in %s [%s]: %s' % (
+                p, x, missing_keys))
 
             if len(unknown_keys) > 0 and self.debug:
                 print('Found unknown props in sketch file in %s with type %s' % (p, x))
@@ -346,6 +346,7 @@ def del_none(d):
 
     return d
 
+
 class AdvancedEncoder(JSONEncoder):
     def default(self, o):
         try:
@@ -357,14 +358,14 @@ class AdvancedEncoder(JSONEncoder):
             if 'enum' in stype:
                 return o.value
 
-            if hasattr(o,'__dict__'):
+            if hasattr(o, '__dict__'):
                 d = o.__dict__
                 if '_raw' in d:
                     del d['_raw']
                 if '_parent' in d:
                     del d['_parent']
 
-                for k,v in list(d.items()):
+                for k, v in list(d.items()):
                     if v is None:
                         del d[k]
 
