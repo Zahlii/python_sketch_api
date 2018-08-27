@@ -525,7 +525,7 @@ class SJSimpleGrid(SJIDBase):
         self.thickGridTimes: int = 0
 
 
-def find_layers(file, symbol: 'SJSymbolMaster', cls: str, images_to_copy=None):
+def find_layers(file, symbol: 'SJSymbolMaster', cls: str, images_to_copy=None) -> List[List[_SJLayerBase]]:
     p = []
 
     def search(layers, path):
@@ -535,7 +535,7 @@ def find_layers(file, symbol: 'SJSymbolMaster', cls: str, images_to_copy=None):
         for l in layers:
             path = opath.copy()
             path.append(l)
-            if l.style is not None and l.style.fills is not None and images_to_copy is not None:
+            if l.style is not None and getattr(l.style,'fills',None) is not None and images_to_copy is not None:
                 for f in l.style.fills:
                     if f.image is not None:
                         # print('Adding image from fill')
