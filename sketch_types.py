@@ -535,7 +535,7 @@ def find_layers(file, symbol: 'SJSymbolMaster', cls: str, images_to_copy=None) -
         for l in layers:
             path = opath.copy()
             path.append(l)
-            if getattr(l,'style',None) is not None and getattr(l.style,'fills',None) is not None and images_to_copy is not None:
+            if l.style is not None and getattr(l.style,'fills',None) is not None and images_to_copy is not None:
                 for f in l.style.fills:
                     if f.image is not None:
                         # print('Adding image from fill')
@@ -667,7 +667,7 @@ class SJPresetDict:
 class SJArtboardLayer(_SJArtboardBase):
     def __init__(self):
         super().__init__()
-        self._class: str = 'artboards'
+        self._class: str = 'artboard'
         self.presetDictionary: SJPresetDict = None
 
     @staticmethod
@@ -1345,7 +1345,7 @@ class SketchPage(_SJLayerBase):
         x = self._parent.sketch_meta.pagesAndArtboards[self.do_objectID]
         m = SJArtboardDescription()
         m.name = artboard.name
-        # sketch_api._link_to_parent(m, artboards)
+        # sketch_api._link_to_parent(m, artboard)
         x.artboards[artboard.do_objectID] = m
         return artboard
 
