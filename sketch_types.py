@@ -667,7 +667,7 @@ class SJPresetDict:
 class SJArtboardLayer(_SJArtboardBase):
     def __init__(self):
         super().__init__()
-        self._class: str = 'artboard'
+        self._class: str = 'artboards'
         self.presetDictionary: SJPresetDict = None
 
     @staticmethod
@@ -1345,7 +1345,7 @@ class SketchPage(_SJLayerBase):
         x = self._parent.sketch_meta.pagesAndArtboards[self.do_objectID]
         m = SJArtboardDescription()
         m.name = artboard.name
-        # sketch_api._link_to_parent(m, artboard)
+        # sketch_api._link_to_parent(m, artboards)
         x.artboards[artboard.do_objectID] = m
         return artboard
 
