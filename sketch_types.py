@@ -303,6 +303,7 @@ class SJBlur(SJIDBase):
         self.motionAngle: float = 0.0
         self.radius: int = 0
         self.type: BlurTypeEnum = BlurTypeEnum.GaussianBlur
+        self.saturation: int = 1
 
 
 class SJColorControls(SJIDBase):
@@ -327,12 +328,15 @@ class SJStyle:
         self.fills: SJFillList = None
         self.textStyle: SJTextStyle = None
         self.miterLimit: int = 10
-        self.startDecorationType: LineDecorationTypeEnum = LineDecorationTypeEnum._None
-        self.endDecorationType: LineDecorationTypeEnum = LineDecorationTypeEnum._None
+        #self.startDecorationType: LineDecorationTypeEnum = None  # LineDecorationTypeEnum._None
+        #self.endDecorationType: LineDecorationTypeEnum = None  # LineDecorationTypeEnum._None
         self.blur: SJBlur = None
         self.contextSettings: SJContextSettings = None
         self.colorControls: SJColorControls = None
         self.do_objectID: SJObjectId = None
+        self.endMarkerType: int = None
+        self.startMarkerType: int = None
+        self.windingRule: int = 1
 
 
 class SJTextStyleAttribute:
@@ -345,6 +349,7 @@ class SJTextStyleAttribute:
         self.MSAttributedStringTextTransformAttribute: int = None
         self.strikethroughStyle: int = None
         self.underlineStyle: int = None
+        self.ligature: int = None # 0
 
 
 class SJTextStyle(SJIDBase):
@@ -463,6 +468,7 @@ class _SJLayerBase(SJIDBase):
         super().__init__()
         self.name: str = ''
         self.nameIsFixed: bool = False
+        self.isFixedToViewport: bool = False
         self.isVisible: bool = True
         self.isLocked: bool = False
         self.layerListExpandedType: LayerListExpandedType = LayerListExpandedType.Collapsed
@@ -490,6 +496,12 @@ class _SJLayerBase(SJIDBase):
         self.isFlowHome: bool = None
         self.layout: SJLayoutGrid = None
         self.flow: SJFlowConnection = None
+        self.hasClippingMask: bool = False
+        self.windingRule: int = None  # TODO enum
+        self.clippingMaskMode: MaskModeEnum = MaskModeEnum.Alpha
+        self.booleanOperation: BooleanOperation = BooleanOperation.Union
+        self.sharedStyleID: SJObjectId = None
+        self.grid: SJSimpleGrid = None
 
     def add_layer(self, r):
         # sketch_api._link_to_parent(r, self)
@@ -692,6 +704,7 @@ class SJTextLayer(_SJLayerBase):
         self.automaticallyDrawOnUnderlyingPath: bool = False
         self.textBehaviour: int = 0
 
+
     @staticmethod
     def create(name: str, x, y, width, height, text: str = '', font_family: str = None, font_size: float = None):
         l_text = SJTextLayer()
@@ -794,9 +807,7 @@ class SJShapeGroupLayer(_SJLayerBase):
         super().__init__()
         self._class: str = 'shapeGroup'
 
-        self.hasClippingMask: bool = False
-        self.windingRule: int = 0  # TODO enum
-        self.clippingMaskMode: MaskModeEnum = MaskModeEnum.Alpha
+
 
     @staticmethod
     def create(name, layer_list: List[_SJLayerBase]):
@@ -833,7 +844,6 @@ class SJShapeLayer(_SJLayerBase):
         self.edited: bool = True
         self.isClosed: bool = True
         self.pointRadiusBehaviour: int = 0
-        self.booleanOperation: BooleanOperation = BooleanOperation.Union
         self.fixedRadius: int = None
         self.hasConvertedToNewRoundCorners: bool = None
 
@@ -1201,23 +1211,12 @@ _ = [
 ]
 
 
-class MSStringAttributeField:
-    def __init__(self):
-        self.MSAttributedStringColorAttribute: SJColor = None
-        self.MSAttributedStringFontAttribute: SJFontDescriptor = None
-        self.paragraphStyle: SJParagraphStyle = None
-        self.kerning: int = None
-        self.MSAttributedStringTextTransformAttribute: int = None
-        self.strikethroughStyle: int = None  # TODO ENUM
-        self.underlineStyle: int = None  # TODO ENUM
-
-
 class MSStringAttribute:
     def __init__(self):
         self._class: str = 'stringAttribute'
         self.location: int = 0
         self.length: int = 1
-        self.attributes: MSStringAttributeField = MSStringAttributeField()
+        self.attributes: SJTextStyleAttribute = SJTextStyleAttribute()
 
 
 class MSAttributedString:
@@ -1362,6 +1361,7 @@ class SketchUserDataEntry:
         self.pageListHeight: int = None
         self.exportableLayerSelection: List[SJObjectId] = None
         self.cloudShare: bool = None  # TODO check true type
+        self.pageListCollapsed: int = None # 1
 
 
 class SJArtboardDescription:
