@@ -28,6 +28,7 @@ class SketchFile:
         return s
 
     def __init__(self, path=None, load_images=False, debug=False):
+        self._linked_symbols = []
         self._file_contents = {}
         self._file_sizes = {}
 
@@ -217,6 +218,13 @@ class SketchFile:
 
         return self._available_symbols
 
+    def get_linked_symbols(self) -> List['sketch_types.SJSymbolMaster']:
+        self._linked_symbols = []
+        for s in self.sketch_document.foreignSymbols:
+            self._linked_symbols.append(s.symbolMaster)
+
+        return self._linked_symbols
+
     def get_symbol_by_id(self, idx):
         m = self.get_available_symbols()
         for s in m:
@@ -225,6 +233,14 @@ class SketchFile:
 
     def search_symbols_by_name(self, name: str, exact=True) -> List['sketch_types.SJSymbolMaster']:
         m = self.get_available_symbols()
+        search = []
+        for s in m:
+            if not exact and name in s.name:
+                search.append(s)
+            elif exact and name == s.name:
+                search.append(s)
+
+        m = self.get_linked_symbols()
         search = []
         for s in m:
             if not exact and name in s.name:

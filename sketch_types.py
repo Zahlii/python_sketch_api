@@ -1,11 +1,11 @@
-import math
-
 import base64
 import copy
+import math
 import secrets
-from biplist import readPlistFromString, writePlistToString
 from enum import Enum
 from typing import NewType, Union, List, Dict
+
+from biplist import readPlistFromString, writePlistToString
 
 from . import sketch_api
 
@@ -138,6 +138,12 @@ class BorderPositionEnum(Enum):
 class MaskModeEnum(Enum):
     Outline = 0
     Alpha = 1
+
+
+class TextBehaviorEnum(Enum):
+    NoWrap = 0
+    Wrap = 1
+    Unknown = 2
 
 
 class BooleanOperation(Enum):
@@ -328,8 +334,8 @@ class SJStyle:
         self.fills: SJFillList = None
         self.textStyle: SJTextStyle = None
         self.miterLimit: int = 10
-        #self.startDecorationType: LineDecorationTypeEnum = None  # LineDecorationTypeEnum._None
-        #self.endDecorationType: LineDecorationTypeEnum = None  # LineDecorationTypeEnum._None
+        # self.startDecorationType: LineDecorationTypeEnum = None  # LineDecorationTypeEnum._None
+        # self.endDecorationType: LineDecorationTypeEnum = None  # LineDecorationTypeEnum._None
         self.blur: SJBlur = None
         self.contextSettings: SJContextSettings = None
         self.colorControls: SJColorControls = None
@@ -349,7 +355,8 @@ class SJTextStyleAttribute:
         self.MSAttributedStringTextTransformAttribute: int = None
         self.strikethroughStyle: int = None
         self.underlineStyle: int = None
-        self.ligature: int = None # 0
+        self.ligature: int = None  # 0
+        self.textStyleVerticalAlignmentKey: int = None
 
 
 class SJTextStyle(SJIDBase):
@@ -489,7 +496,7 @@ class _SJLayerBase(SJIDBase):
         self.includeBackgroundColorInExport: bool = None
         self.resizingConstraint: int = 63
         self.frame: SJRect = SJRect()
-        self.frame.do_objectID = None # get_object_id()
+        self.frame.do_objectID = None  # get_object_id()
         self.originalObjectID: SJObjectId = None
         self.userInfo: dict = None
         self.resizesContent: bool = None
@@ -547,7 +554,8 @@ def find_layers(file, symbol: 'SJSymbolMaster', cls: str, images_to_copy=None) -
         for l in layers:
             path = opath.copy()
             path.append(l)
-            if hasattr(l,'style') and l.style is not None and getattr(l.style,'fills',None) is not None and images_to_copy is not None:
+            if hasattr(l, 'style') and l.style is not None and getattr(l.style, 'fills',
+                                                                       None) is not None and images_to_copy is not None:
                 for f in l.style.fills:
                     if f.image is not None:
                         # print('Adding image from fill')
@@ -702,8 +710,7 @@ class SJTextLayer(_SJLayerBase):
         self.lineSpacingBehaviour: int = 0
         self.dontSynchroniseWithSymbol: bool = False
         self.automaticallyDrawOnUnderlyingPath: bool = False
-        self.textBehaviour: int = 0
-
+        self.textBehaviour: TextBehaviorEnum = TextBehaviorEnum.Wrap
 
     @staticmethod
     def create(name: str, x, y, width, height, text: str = '', font_family: str = None, font_size: float = None):
@@ -806,8 +813,6 @@ class SJShapeGroupLayer(_SJLayerBase):
     def __init__(self):
         super().__init__()
         self._class: str = 'shapeGroup'
-
-
 
     @staticmethod
     def create(name, layer_list: List[_SJLayerBase]):
@@ -1249,6 +1254,11 @@ class MSAttributedString:
         ps = self.attributes[0].attributes.paragraphStyle
         return ps.alignment if ps is not None else None
 
+    def set_alignment(self, align):
+        s = SJParagraphStyle()
+        s.alignment = align
+        self.attributes[0].attributes.paragraphStyle = s
+
 
 class MSJSONFileReference:
     def __init__(self):
@@ -1300,6 +1310,7 @@ class SJForeignSymbol:
         self.sourceLibraryName: str = None
         self.originalMaster: SJSymbolMaster = None
         self.symbolMaster: SJSymbolMaster = None
+        self.symbolPrivate: bool = False
 
 
 # document.json
@@ -1319,11 +1330,31 @@ class SketchDocument(SJIDBase):
         self.layerStyles: SJSharedStyleContainer = SJSharedStyleContainer()
         self.layerSymbols: SJSharedSymbolContainer = SJSharedSymbolContainer()
 
-        self.foreignLayerStyles: List = []
-        self.foreignTextStyles: List = []
+        self.foreignLayerStyles: List[SJForeignLayerStyle] = []
+        self.foreignTextStyles: List[SJForeignTextStyle] = []
 
         self.pages: MSJSONFileReferenceList = []
         self.userInfo: dict = None  # TODO
+
+
+class SJForeignLayerStyle:
+    def __init__(self):
+        self._class: str = 'MSImmutableForeignLayerStyle'
+        self.libraryID: SJObjectId = ''
+        self.remoteStyleID: SJObjectId = ''
+        self.symbolPrivate: bool = False
+        self.sourceLibraryName: str = None
+        self.localSharedStyle: SJSharedStyle = None
+
+
+class SJForeignTextStyle:
+    def __init__(self):
+        self._class: str = 'MSImmutableForeignTextStyle'
+        self.libraryID: SJObjectId = ''
+        self.remoteStyleID: SJObjectId = ''
+        self.symbolPrivate: bool = False
+        self.sourceLibraryName: str = None
+        self.localSharedStyle: SJSharedStyle = None
 
 
 # pages/doObjectID.json
@@ -1361,7 +1392,7 @@ class SketchUserDataEntry:
         self.pageListHeight: int = None
         self.exportableLayerSelection: List[SJObjectId] = None
         self.cloudShare: bool = None  # TODO check true type
-        self.pageListCollapsed: int = None # 1
+        self.pageListCollapsed: int = None  # 1
 
 
 class SJArtboardDescription:
