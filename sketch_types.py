@@ -510,6 +510,12 @@ class _SJLayerBase(SJIDBase):
         self.sharedStyleID: SJObjectId = None
         self.grid: SJSimpleGrid = None
 
+    def __repr__(self):
+        return '%s(name=%s)' % (self.__class__.__name__, self.name)
+
+    def __str__(self):
+        return self.__repr__()
+
     def add_layer(self, r):
         # sketch_api._link_to_parent(r, self)
         if self.layers is None:
@@ -637,6 +643,11 @@ class SJSymbolInstanceLayer(_SJLayerBase):
         target_symbol_ids = [t for t in target_symbol_ids if t._class in ['symbolInstance']]
 
         self.add_nested(target_symbol_ids, new_symbol.symbolID, '_symbolID')
+
+    def add_color_override(self, target_symbol_ids: List[_SJLayerBase], new_style_id):
+        target_symbol_ids = [t for t in target_symbol_ids if t._class in ['symbolInstance']]
+
+        self.add_nested(target_symbol_ids, new_style_id, '_layerStyle')
 
     def add_nested(self, parent_layers, value, name='_stringValue'):
         ov = SJOverride()
