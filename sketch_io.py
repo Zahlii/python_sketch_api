@@ -261,12 +261,18 @@ class SketchToPy:
                 else:
                     pass  # print('Couldnt find expected property %s' % prop)
 
+        sid = None
         if 'do_objectID' in js:
-            self._object_maps[js['do_objectID']] = ret
+            sid = js['do_objectID']
         if 'sharedObjectID' in js:
-            self._object_maps[js['sharedObjectID']] = ret
+            sid = js['sharedObjectID']
         if 'symbolID' in js:
-            self._object_maps[js['symbolID']] = ret
+            sid = js['symbolID']
+
+        if sid is not None:
+            if sid not in self._object_maps:
+                self._object_maps[sid] = []
+            self._object_maps[sid].append(ret)
         if '_class' in js:
             c = js['_class']
             if c not in self._class_maps:
