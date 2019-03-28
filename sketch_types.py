@@ -41,6 +41,9 @@ class SJRect(SJIDBase):
         self.width: float = 300
         self.height: float = 300
 
+    def __str__(self):
+        return 'SJRect(x=%f,y=%f,w=%f,h=%f)' % (self.x, self.y, self.width, self.height)
+
 
 class SJColorNoClass(SJIDBase):
     def __init__(self, r=0.0, g=0.0, b=0.0, a=1.0):
